@@ -1,0 +1,14 @@
+- Users (collection)
+  - email (document)
+    - dob
+    - email
+    - password
+    - university
+    - username
+    - Friends (collection)
+      - ...
+    - Posts (collection)
+      - k6Tuo... (document)
+        - text
+        - timestamp
+        - userId

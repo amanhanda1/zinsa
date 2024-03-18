@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "828747139363",
+    "project_id": "zinsa-app",
+    "storage_bucket": "zinsa-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:828747139363:android:1f116fe4baf98852416496",
+        "android_client_info": {
+          "package_name": "com.example.zinsa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "828747139363-i8opea72a8h5hgefdsfnftil28m3j3bm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5rrhN3GACNgL8X3m74Wi5Ylcc0JtY7G0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "828747139363-i8opea72a8h5hgefdsfnftil28m3j3bm.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "828747139363-7j33vrvjdoa7de2lh944bt11rqmcr2vk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.zinsa.RunnerTests"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
