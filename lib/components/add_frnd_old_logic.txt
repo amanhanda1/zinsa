@@ -1,0 +1,44 @@
+Future<void> addFriend() async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) {
+    return;
+  }
+
+  // Fetch the username of the current user from Firestore
+  final userDoc = await FirebaseFirestore.instance.collection('Users').doc(currentUser.uid).get();
+  final currentUsername = userDoc.data()?['username'];
+
+  if (currentUsername == null) {
+    // Handle the case where the username is not found
+    return;
+  }
+
+  // Continue with your existing code
+  final friendDoc = FirebaseFirestore.instance.collection('Users').doc(widget.userId).collection('Friends').doc(currentUser.uid);
+  final friendData = {
+    'friendId': currentUser.uid,
+    'timestamp': FieldValue.serverTimestamp(),
+  };
+  await friendDoc.set(friendData);
+
+  // Update friend list for the user you're adding
+  final currentUserFriendDoc = FirebaseFirestore.instance.collection('Users').doc(widget.userId).collection('Friends').doc(currentUser.uid);
+  final currentUserData = {
+    'friendId': currentUser.uid,
+    'timestamp': FieldValue.serverTimestamp(),
+  };
+  await currentUserFriendDoc.set(currentUserData);
+
+  setState(() {
+    isFriend = true;
+  });
+
+  // Add a notification to the Notifications collection
+  final notificationDoc = FirebaseFirestore.instance.collection('Notifications').doc();
+  final notificationData = {
+    'timestamp': FieldValue.serverTimestamp(),
+    'message': '$currentUsername added you as a friend',
+    'userId': widget.userId, // User who is being added as a friend
+  };
+  await notificationDoc.set(notificationData);
+}

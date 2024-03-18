@@ -5,7 +5,7 @@ import 'package:zinsa/pages/home_page.dart';
 import 'package:zinsa/pages/login_page.dart';
 import 'package:zinsa/pages/profile_page.dart';
 import 'package:zinsa/pages/sign_up_page.dart';
-import 'package:zinsa/pages/message_page.dart';
+import 'package:zinsa/pages/AlertPage.dart';
 
 class FirstPage extends StatefulWidget {
   const FirstPage({Key? key}) : super(key: key);
@@ -100,7 +100,7 @@ class _FirstPageState extends State<FirstPage> with SingleTickerProviderStateMix
   void _navigateToLoginPage(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
+      MaterialPageRoute(builder: (context) => PostPage()),
     );
   }
 
@@ -116,10 +116,4 @@ class _FirstPageState extends State<FirstPage> with SingleTickerProviderStateMix
     _animationController.dispose();
     super.dispose();
   }
-}
-
-void main() {
-  runApp(const MaterialApp(
-    home: FirstPage(),
-  ));
 }

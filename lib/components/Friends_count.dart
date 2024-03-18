@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:zinsa/components/friend_list%5Bel%5D.dart';
+import 'package:zinsa/components/friend_list.dart';
 
 class FriendCountWidget extends StatelessWidget {
   final String userId;
@@ -45,7 +45,7 @@ class FriendCountWidget extends StatelessWidget {
             );
           },
           child: Text(
-            '$friendCount Friends',
+            '$friendCount supporters',
             style: TextStyle(
               color: Colors.white,
               decoration: TextDecoration.underline,

@@ -10,6 +10,7 @@ class FriendButton extends StatefulWidget {
   @override
   _FriendButtonState createState() => _FriendButtonState();
 }
+
 class _FriendButtonState extends State<FriendButton> {
   late bool isFriend;
 
@@ -26,9 +27,10 @@ class _FriendButtonState extends State<FriendButton> {
       return;
     }
 
-    final userDoc = FirebaseFirestore.instance.collection('Users').doc(currentUser.email);
+    final userDoc =
+        FirebaseFirestore.instance.collection('Users').doc(currentUser.uid);
     final friendDoc = userDoc.collection('Friends').doc(widget.userId);
-
+    final sprtingData = userDoc.collection('Supportings').doc(widget.userId);
     final friendSnapshot = await friendDoc.get();
 
     setState(() {
@@ -37,49 +39,73 @@ class _FriendButtonState extends State<FriendButton> {
   }
 
   Future<void> addFriend() async {
-  final currentUser = FirebaseAuth.instance.currentUser;
-  if (currentUser == null) {
-    return;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return;
+    }
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.uid)
+        .get();
+    final currentUsername = userDoc.data()?['username'];
+
+    if (currentUsername == null) {
+      return;
+    }
+
+    final friendDoc = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(widget.userId)
+        .collection('Friends')
+        .doc(currentUser.uid);
+    final sprtingDoc = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser.uid)
+        .collection('Supportings')
+        .doc(widget.userId);
+    final friendData = {
+      'friendId': currentUser.uid,
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+    final sprtData = {
+      'friendId': widget.userId,
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+    await friendDoc.set(friendData);
+    await sprtingDoc.set(sprtData); // Set supporting data using friend's ID
+
+    setState(() {
+      isFriend = true;
+    });
+
+    final notificationData = {
+      'user':currentUser.uid,
+      'timestamp': FieldValue.serverTimestamp(),
+      'message': '$currentUsername added you as a friend',
+      'userId': currentUser.uid,
+    };
+    await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(widget.userId)
+        .collection('Notifications')
+        .add(notificationData);
   }
 
-  final userDoc = FirebaseFirestore.instance.collection('Users').doc(currentUser.email);
-  final friendDoc = userDoc.collection('Friends').doc(widget.userId);
-
-  // Create a regular Map with the desired data
-  final friendData = {
-    'friendId': widget.userId,
-    'timestamp': FieldValue.serverTimestamp(),
-  };
-
-  // Add the friend data to Firestore
-  await friendDoc.set(friendData);
-
-  // Update friend list for the user you're adding
-  final friendUserDoc = FirebaseFirestore.instance.collection('Users').doc(widget.userId);
-  final currentUserFriendDoc = friendUserDoc.collection('Friends').doc(currentUser.email);
-
-  final currentUserData = {
-    'friendId': currentUser.email,
-    'timestamp': FieldValue.serverTimestamp(),
-  };
-
-  await currentUserFriendDoc.set(currentUserData);
-
-  setState(() {
-    isFriend = true;
-  });
-}
   Future<void> removeFriend() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       return;
     }
 
-    final userDoc = FirebaseFirestore.instance.collection('Users').doc(currentUser.email);
+    final userDoc =
+        FirebaseFirestore.instance.collection('Users').doc(currentUser.uid);
     final friendDoc = userDoc.collection('Friends').doc(widget.userId);
 
-    final friendUserDoc = FirebaseFirestore.instance.collection('Users').doc(widget.userId);
-    final currentUserFriendDoc = friendUserDoc.collection('Friends').doc(currentUser.email);
+    final friendUserDoc =
+        FirebaseFirestore.instance.collection('Users').doc(widget.userId);
+    final currentUserFriendDoc =
+        friendUserDoc.collection('Friends').doc(currentUser.uid);
 
     try {
       await FirebaseFirestore.instance.runTransaction((transaction) async {
@@ -101,7 +127,8 @@ class _FriendButtonState extends State<FriendButton> {
       child: ElevatedButton(
         onPressed: isFriend ? removeFriend : addFriend,
         style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.all<Color>(isFriend ? Colors.red : Colors.blue),
+          backgroundColor: MaterialStateProperty.all<Color>(
+              isFriend ? Colors.red : Colors.blue),
           shape: MaterialStateProperty.all<RoundedRectangleBorder>(
             const RoundedRectangleBorder(
               borderRadius: BorderRadius.zero,
@@ -110,7 +137,7 @@ class _FriendButtonState extends State<FriendButton> {
           ),
         ),
         child: Text(
-          isFriend ? 'Remove Friend' : 'Add Friend',
+          isFriend ? 'Remove Support' : 'Add Support',
           style: const TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
         ),
       ),

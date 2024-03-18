@@ -4,20 +4,24 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:zinsa/components/custom_nav_bar.dart';
 import 'package:zinsa/components/edit_profile.dart';
 import 'package:zinsa/components/friend_button.dart';
-import 'package:zinsa/components/friend_count%5Bel%5D.dart';
+import 'package:zinsa/components/Friends_count.dart';
 import 'package:zinsa/components/hobbies.dart';
 import 'package:zinsa/components/postwid.dart';
 import 'package:zinsa/components/show_profile.dart';
-import 'package:zinsa/components/alert_box.dart';
+import 'package:zinsa/components/Support_count.dart';
+import 'package:zinsa/messaging/chatroom.dart';
+import 'package:zinsa/pages/AlertPage.dart';
+import 'package:zinsa/pages/allmessage_page.dart';
 import 'package:zinsa/pages/first_page.dart';
 import 'package:zinsa/pages/home_page.dart';
-import 'package:zinsa/pages/message_page.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:zinsa/pages/notif_page.dart';
+import 'package:zinsa/pages/ongoing_events.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userId;
 
-  const ProfilePage({Key? key, required this.userId}) : super(key: key);
+  const ProfilePage({super.key, required this.userId});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -25,8 +29,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool showPosts = true;
-  bool showMessages = false; // Add this line
-
   @override
   Widget build(BuildContext context) {
     void navigateToHomePage() {
@@ -47,6 +49,18 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
 
+    void navigateToNotificationPage(BuildContext context) {
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NotificationPage(userId: currentUser.uid),
+          ),
+        );
+      }
+    }
+
     void navigateToProfilePage(String userId) {
       Navigator.push(
         context,
@@ -56,8 +70,35 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
 
+    void navigateToEventPage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const Events(),
+        ),
+      );
+    }
+
+    void navigateToChatPage(String userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => allMessages(userId: userId),
+        ),
+      );
+    }
+
+    void navigateToAlertPage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const Stories(),
+        ),
+      );
+    }
+
     final currentUser = FirebaseAuth.instance.currentUser;
-    final isOwnProfile = widget.userId == currentUser?.email;
+    final isOwnProfile = widget.userId == currentUser?.uid;
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(206, 41, 152, 128),
@@ -68,6 +109,36 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [Text("ZINSA")],
         ),
+        actions: [
+          // Add PopupMenuButton
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'logout') {
+                logout();
+              } else if (value == 'notifications') {
+                navigateToNotificationPage(context);
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              // Option 1: Logout
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: ListTile(
+                  leading: Icon(Icons.logout),
+                  title: Text('Logout'),
+                ),
+              ),
+              // Option 2: Navigate to NotificationPage
+              const PopupMenuItem<String>(
+                value: 'notifications',
+                child: ListTile(
+                  leading: Icon(Icons.notifications),
+                  title: Text('Notifications'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
@@ -111,49 +182,41 @@ class _ProfilePageState extends State<ProfilePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Name: $name ",
+                    Text(
+                      "Name: $name ",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: GoogleFonts.aBeeZee().fontFamily,
+                      ),
+                    ),
+                    if (dob != null) ...[
+                      Text(
+                        "{${calculateAge(dob)}}",
                         style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: GoogleFonts.aBeeZee().fontFamily)),
-                    if (dob != null)
-                      Text("{${calculateAge(dob)}}",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontFamily: GoogleFonts.aBeeZee().fontFamily)),
-                    if (!isOwnProfile)
+                          color: Colors.white,
+                          fontFamily: GoogleFonts.aBeeZee().fontFamily,
+                        ),
+                      ),
                       IconButton(
                         onPressed: () {
-                          // Show Send Alert Dialog
-                          showDialog(
-                            context: context,
-                            builder: (context) => SendAlertDialog(
-                              onAlertSent: (message) async {
-                                // Handle the alert message (e.g., save it to Firestore)
-                                final currentUser =
-                                    FirebaseAuth.instance.currentUser;
-                                if (currentUser != null) {
-                                  await FirebaseFirestore.instance
-                                      .collection('Alerts')
-                                      .add({
-                                    'senderId': currentUser.email,
-                                    'receiverId': widget.userId,
-                                    'message': message,
-                                    'timestamp': FieldValue.serverTimestamp(),
-                                  });
-                                }
-                              },
-                              userId: widget
-                                  .userId, // Pass the user ID from ProfilePage
-                            ),
-                          );
+                          if (!isOwnProfile) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatRoomPage(
+                                  senderUserId:
+                                      currentUser!.uid, // Current user ID
+                                  receiverUserId:
+                                      widget.userId, // Profile user ID
+                                ),
+                              ),
+                            );
+                          }
                         },
-                        icon: const Icon(
-                          Icons.message_outlined,
-                          color: Colors
-                              .white, // Keep it white or change to Colors.orange
-                          size: 18, // You can adjust the size as needed
-                        ),
-                      )
+                        icon:
+                            const Icon(Icons.chat_bubble, color: Colors.white),
+                      ),
+                    ],
                   ],
                 ),
                 Text(universityName,
@@ -208,6 +271,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     FriendCountWidget(userId: widget.userId),
+                    Spacer(), 
+                    SupportCountWidget(viewedUserId: widget.userId),
                   ],
                 ),
                 const Divider(
@@ -248,19 +313,21 @@ class _ProfilePageState extends State<ProfilePage> {
                   HobbiesWidget(
                       userId: widget.userId,
                       isOwnProfile: widget.userId ==
-                          FirebaseAuth.instance.currentUser!.email),
+                          FirebaseAuth.instance.currentUser!.uid),
                 const SizedBox(height: 8),
-                if (showMessages) MessagesWidget(userId: widget.userId),
               ],
             ),
           );
         },
       ),
       bottomNavigationBar: cNavigationBar(
+        onEventPressed: navigateToEventPage,
         onHomeIconPressed: navigateToHomePage,
+        onChatPressed: () =>
+            navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
         onProfileIconPressed: () =>
-            navigateToProfilePage(FirebaseAuth.instance.currentUser!.email!),
-        onlogout: logout,
+            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
+        onAlertPressed: navigateToAlertPage,
       ),
     );
   }

@@ -2,9 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:zinsa/components/custom_nav_bar.dart';
+import 'package:zinsa/pages/AlertPage.dart';
 import 'package:zinsa/pages/add_friend.dart';
 import 'package:zinsa/pages/add_post.dart';
+import 'package:zinsa/pages/allmessage_page.dart';
 import 'package:zinsa/pages/first_page.dart';
+import 'package:zinsa/pages/ongoing_events.dart';
 import 'package:zinsa/pages/profile_page.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -22,7 +25,6 @@ class PostPage extends StatelessWidget {
         ),
       );
     }
-
 
     void navigateToProfilePage(String userId) {
       Navigator.push(
@@ -47,6 +49,32 @@ class PostPage extends StatelessWidget {
         context,
         MaterialPageRoute(
           builder: (context) => AddFriendPage(),
+        ),
+      );
+    }
+
+    void navigateToEventPage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const Events(),
+        ),
+      );
+    }
+    void navigateToAlertPage(){
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Stories(),
+        ),
+      );
+    }
+
+    void navigateToChatPage(String userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => allMessages(userId: userId),
         ),
       );
     }
@@ -115,12 +143,13 @@ class PostPage extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      title: Text(post['text'] ?? '',
-                          style: TextStyle(
-                              fontFamily: GoogleFonts.nunito().fontFamily,
-                              fontSize: 21,
-                              fontWeight: FontWeight.w700),
-                          ),
+                      title: Text(
+                        post['text'] ?? '',
+                        style: TextStyle(
+                            fontFamily: GoogleFonts.nunito().fontFamily,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w700),
+                      ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -129,13 +158,15 @@ class PostPage extends StatelessWidget {
                               style: TextStyle(
                                   fontFamily: GoogleFonts.aBeeZee().fontFamily,
                                   fontSize: 12,
-                                  color: const Color.fromARGB(255, 39, 38, 38))),
+                                  color:
+                                      const Color.fromARGB(255, 39, 38, 38))),
                           Text(
                               '${userData?['university'] ?? 'Unknown University'}',
                               style: TextStyle(
                                   fontFamily: GoogleFonts.cardo().fontFamily,
                                   fontSize: 12,
-                                  color: const Color.fromARGB(255, 39, 38, 38))),
+                                  color:
+                                      const Color.fromARGB(255, 39, 38, 38))),
                           const SizedBox(height: 2),
                           Text(
                               _formatDateTime(post['timestamp'] as Timestamp? ??
@@ -143,7 +174,8 @@ class PostPage extends StatelessWidget {
                               style: TextStyle(
                                   fontFamily: GoogleFonts.lobster().fontFamily,
                                   fontSize: 9.8,
-                                  color: const Color.fromARGB(255, 39, 38, 38))),
+                                  color:
+                                      const Color.fromARGB(255, 39, 38, 38))),
                         ],
                       ),
                       onTap: () {
@@ -171,10 +203,12 @@ class PostPage extends StatelessWidget {
         child: const Icon(Icons.add, color: Colors.black),
       ),
       bottomNavigationBar: cNavigationBar(
+        onEventPressed: navigateToEventPage,
         onHomeIconPressed: navigateToHomePage,
+        onChatPressed: ()=>navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
         onProfileIconPressed: () =>
-            navigateToProfilePage(FirebaseAuth.instance.currentUser!.email!),
-        onlogout: logout,
+            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
+        onAlertPressed: navigateToAlertPage,
       ),
     );
   }

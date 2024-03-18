@@ -28,7 +28,7 @@ class UniversityListScreenState extends State<UniversityListScreen> {
     if (user != null && user.email != null) {
       await FirebaseFirestore.instance
           .collection("Users")
-          .doc(user.email!) // Assuming 'email' is the user identifier
+          .doc(user.uid!) // Assuming 'email' is the user identifier
           .set({
         'university': universityName,
       }, SetOptions(merge: true));

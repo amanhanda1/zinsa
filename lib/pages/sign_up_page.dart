@@ -5,7 +5,6 @@ import 'package:zinsa/components/mytextfield.dart';
 import 'package:zinsa/components/error.dart';
 import 'package:zinsa/components/showuniversities.dart';
 import 'package:zinsa/login/log_in_with_google.dart';
-import 'package:zinsa/pages/add_friend.dart';
 import 'package:zinsa/pages/home_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -86,20 +85,26 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> createUserDocument(
-      UserCredential? userCredential, DateTime? dob, String? university) async {
-    if (userCredential != null && userCredential.user != null) {
-      await FirebaseFirestore.instance
-          .collection("Users")
-          .doc(userCredential.user!.email)
-          .set({
-        'email': userCredential.user!.email,
-        'username': usernameController.text,
-        'password': passwordController.text,
-        'dob': dob,
-        'university': university,
-      });
-    }
+  UserCredential? userCredential,
+  DateTime? dob,
+  String? university,
+) async {
+  if (userCredential != null && userCredential.user != null) {
+    await FirebaseFirestore.instance
+        .collection("Users")
+        .doc(userCredential.user!.uid) // Store user UID as document ID
+        .set({
+      'email': emailController.text,
+      'uid': userCredential.user!.uid, // Store user UID
+      'username': usernameController.text,
+      'password': passwordController.text,
+      'dob': dob,
+      'university': university,
+      'lastseen': FieldValue.serverTimestamp(),
+      'chats':[] 
+    });
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -170,8 +175,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     onPressed: () async {
                       // Navigate to university list and get the selected university
-                      String? selectedUniversity =
-                          await Navigator.push<String>(
+                      String? selectedUniversity = await Navigator.push<String>(
                         context,
                         MaterialPageRoute(
                           builder: (context) => UniversityListScreen(),
@@ -189,7 +193,8 @@ class _RegisterPageState extends State<RegisterPage> {
               ElevatedButton(
                 onPressed: resisterUser,
                 style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
+                  backgroundColor:
+                      MaterialStateProperty.all<Color>(Colors.white),
                   minimumSize: MaterialStateProperty.all(const Size(999, 44)),
                 ),
                 child: const Text(

@@ -1,28 +1,53 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:zinsa/components/custom_nav_bar.dart';
+import 'package:zinsa/pages/AlertPage.dart';
+import 'package:zinsa/pages/allmessage_page.dart';
 import 'package:zinsa/pages/first_page.dart';
+import 'package:zinsa/pages/ongoing_events.dart';
 import 'package:zinsa/pages/profile_page.dart';
 import 'package:zinsa/pages/home_page.dart';
+import 'package:zinsa/pages/ongoing_events.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class AddFriendPage extends StatelessWidget {
-  Future<List<Map<String, dynamic>>> getOtherUsersWithSameUniversity() async {
+class AddFriendPage extends StatefulWidget {
+  const AddFriendPage({super.key});
+
+  @override
+  State<AddFriendPage> createState() => _AddFriendPageState();
+}
+
+class _AddFriendPageState extends State<AddFriendPage> {
+  late Timer _timer;
+  late Map<String, dynamic> _userDataCache = {};
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(Duration(minutes: 1), (timer) {
+      updateLastSeen();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  Future<List<String>> getOtherUsersWithSameUniversity() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     final userSnapshot = await FirebaseFirestore.instance
         .collection('Users')
-        .doc(currentUser!.email)
+        .doc(currentUser!.uid)
         .get();
 
     final currentUserUniversity = userSnapshot['university'] as String?;
 
     if (currentUserUniversity == null) {
-      return []; // No university information for the current user
+      return []; 
     }
-
-    // Update the 'lastSeen' field when a user signs in or performs an action
-    await updateUserLastSeen();
 
     final querySnapshot = await FirebaseFirestore.instance
         .collection('Users')
@@ -30,26 +55,49 @@ class AddFriendPage extends StatelessWidget {
         .get();
 
     final otherUsers = querySnapshot.docs
-        .where((doc) => doc.id != currentUser.email) // Exclude the current user
-        .map((doc) => {
-              'id': doc.id,
-              'status': doc['status'] ?? 'offline',
-            })
+        .where((doc) => doc.id != currentUser.uid)
+        .map((doc) => doc.id)
         .toList();
 
     return otherUsers;
   }
 
-  Future<void> updateUserLastSeen() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
+  bool _checkOnlineStatus(dynamic lastSeen) {
+    if (lastSeen is Timestamp) {
+      final currentTime = Timestamp.now();
+      final difference = currentTime.seconds - lastSeen.seconds;
+      return difference < 300;
+    }
+    return false;
+  }
 
-    // Update the 'lastSeen' field when a user signs in or performs an action
-    await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUser!.email)
-        .set({
-      'lastSeen': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+  void updateLastSeen() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser.uid)
+          .update({'lastseen': FieldValue.serverTimestamp()});
+    }
+  }
+
+  Future<Map<String, dynamic>> getUserData(String userId) async {
+    if (_userDataCache.containsKey(userId)) {
+      return _userDataCache[userId]!;
+    } else {
+      final snapshot = await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(userId)
+          .get();
+
+      if (snapshot.exists) {
+        final userData = snapshot.data() as Map<String, dynamic>;
+        _userDataCache[userId] = userData;
+        return userData;
+      } else {
+        return {};
+      }
+    }
   }
 
   @override
@@ -89,6 +137,30 @@ class AddFriendPage extends StatelessWidget {
         ),
       );
     }
+    void navigateToEventPage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const Events(),
+        ),
+      );
+    }
+    void navigateToChatPage(String userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => allMessages(userId: userId),
+        ),
+      );
+    }
+    void navigateToAlertPage(){
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Stories(),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(206, 41, 152, 128),
@@ -100,7 +172,7 @@ class AddFriendPage extends StatelessWidget {
         ),
         elevation: 1000,
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
+      body: FutureBuilder<List<String>>(
         future: getOtherUsersWithSameUniversity(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -124,80 +196,63 @@ class AddFriendPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 2.2),
                 child: GestureDetector(
                   onTap: () {
-                    navigateToProfilePage(otherUsers[index]['id']);
+                    navigateToProfilePage(otherUsers[index]);
                   },
-                  child: Card(
-                    color: const Color.fromARGB(164, 255, 255,
-                        255), // Set the background color to white with some transparency
-                    child: ListTile(
-                      title: FutureBuilder<DocumentSnapshot>(
-                        future: FirebaseFirestore.instance
-                            .collection("Users")
-                            .doc(otherUsers[index]['id'])
-                            .get(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Text("Loading...");
-                          }
+                  child: FutureBuilder<Map<String, dynamic>>(
+                    future: getUserData(otherUsers[index]),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Text("Loading...");
+                      }
 
-                          if (snapshot.hasError) {
-                            return Text("Error: ${snapshot.error}");
-                          }
+                      if (snapshot.hasError) {
+                        return Text("Error: ${snapshot.error}");
+                      }
 
-                          if (!snapshot.hasData || snapshot.data == null) {
-                            return const Text("User data not found");
-                          }
+                      if (!snapshot.hasData || snapshot.data == null) {
+                        return const Text("User data not found");
+                      }
 
-                          final userData =
-                              snapshot.data!.data() as Map<String, dynamic>;
-                          final username =
-                              userData['username'] as String? ?? '';
-                          final bio = userData['bio'] ?? '';
-                          final lastSeen = userData['lastSeen'];
+                      final userData = snapshot.data!;
+                      final username = userData['username'] as String? ?? '';
+                      final bio = userData['bio'] ?? '';
+                      final lastSeen = userData['lastseen'];
 
-                          // Calculate time difference to determine online/offline status
-                          final currentTime = DateTime.now();
-                          final difference = currentTime
-                              .difference(lastSeen?.toDate() ?? DateTime(0));
+                      final isOnline = _checkOnlineStatus(lastSeen);
 
-                          // Check if the user was seen within the last 5 minutes
-                          final isOnline = difference.inMinutes <= 5;
+                      final cardColor = isOnline
+                          ? Color.fromARGB(255, 250, 253,251) 
+                          : Color.fromARGB(72, 252, 252,252); 
+                      final dotColor = isOnline ? Colors.green : Colors.red;
 
-                          return Column(
+                      return Card(
+                        color: cardColor,
+                        child: ListTile(
+                          leading: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: dotColor,
+                            ),
+                          ),
+                          title: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                username,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: isOnline ? Colors.black : Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                'bio: $bio',
-                                style: TextStyle(
-                                  fontSize: 12.8,
-                                  fontFamily: GoogleFonts.aBeeZee().fontFamily,
-                                  color: isOnline ? Colors.black : Colors.grey,
-                                ),
-                              ),
-                              if (lastSeen != null)
-                                Text(
-                                  'Last seen: ${lastSeen.toDate()}',
+                              Text(username,
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600)),
+                              Text('bio: $bio',
                                   style: TextStyle(
-                                    fontSize: 12.8,
-                                    fontFamily:
-                                        GoogleFonts.aBeeZee().fontFamily,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                                      fontSize: 12.8,
+                                      fontFamily:
+                                          GoogleFonts.aBeeZee().fontFamily)),
                             ],
-                          );
-                        },
-                      ),
-                    ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               );
@@ -206,11 +261,14 @@ class AddFriendPage extends StatelessWidget {
         },
       ),
       bottomNavigationBar: cNavigationBar(
+        onEventPressed: navigateToEventPage,
         onHomeIconPressed: navigateToHomePage,
+        onChatPressed: () =>navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
         onProfileIconPressed: () =>
-            navigateToProfilePage(FirebaseAuth.instance.currentUser!.email!),
-        onlogout: logout,
+            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
+        onAlertPressed: navigateToAlertPage,
       ),
     );
   }
-}
+  }
+

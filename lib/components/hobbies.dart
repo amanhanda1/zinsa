@@ -51,7 +51,6 @@ class _HobbiesWidgetState extends State<HobbiesWidget> {
 
             return Column(
               children: [
-                
                 if (widget.isOwnProfile) // Only show the add hobby option for own profile
                   Row(
                     children: [
@@ -81,15 +80,29 @@ class _HobbiesWidgetState extends State<HobbiesWidget> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10,),
+                if (hobbies.isEmpty) // Show a message if there are no hobbies
+                   const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 111),
+                        child: Text(
+                          "Nothing to show here",
+                          style: TextStyle(
+                            color: Colors.white,
+                          ),
+                        
+                      ),
+                    ),
+                  ),
+                if (hobbies.isNotEmpty) // Only show hobbies if the list is not empty
                   Wrap(
-                  spacing: 8.0,
-                  runSpacing: 8.0,
-                  children: [
-                    for (var hobby in hobbies)
-                      _buildHobbyItem(hobby),
-                  ],
-                ),
+                    spacing: 8.0,
+                    runSpacing: 8.0,
+                    children: [
+                      for (var hobby in hobbies)
+                        if(hobby!=null)
+                          _buildHobbyItem(hobby),
+                    ],
+                  ),
               ],
             );
           },
