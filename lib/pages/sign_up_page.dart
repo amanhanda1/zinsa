@@ -101,7 +101,6 @@ class _RegisterPageState extends State<RegisterPage> {
       'dob': dob,
       'university': university,
       'lastseen': FieldValue.serverTimestamp(),
-      'chats':[] 
     });
   }
 }

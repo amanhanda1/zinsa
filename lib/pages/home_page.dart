@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:zinsa/components/custom_nav_bar.dart';
 import 'package:zinsa/pages/AlertPage.dart';
 import 'package:zinsa/pages/add_friend.dart';
@@ -9,14 +11,20 @@ import 'package:zinsa/pages/allmessage_page.dart';
 import 'package:zinsa/pages/first_page.dart';
 import 'package:zinsa/pages/ongoing_events.dart';
 import 'package:zinsa/pages/profile_page.dart';
-import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class PostPage extends StatelessWidget {
   const PostPage({Key? key});
 
   @override
   Widget build(BuildContext context) {
+    Future<void> _refreshMessages() async {
+      Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => PostPage(),),
+          );
+      await Future.delayed(Duration(seconds: 2));
+    }
+
     void logout() {
       Navigator.push(
         context,
@@ -94,100 +102,103 @@ class PostPage extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('Posts').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-
-          final posts = snapshot.data?.docs ?? [];
-
-          return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              final post = posts[index].data() as Map<String, dynamic>;
-              final userId = post['userId'] as String;
-
-              return FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('Users')
-                    .doc(userId)
-                    .get(),
-                builder: (context, userSnapshot) {
-                  if (userSnapshot.connectionState == ConnectionState.waiting) {
-                    return const CircularProgressIndicator();
-                  }
-
-                  if (userSnapshot.hasError || !userSnapshot.hasData) {
-                    return Container();
-                  }
-
-                  final userData =
-                      userSnapshot.data?.data() as Map<String, dynamic>?;
-
-                  return Card(
-                    elevation: 5,
-                    margin:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    color: Colors.white.withOpacity(0.42),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
+      body: RefreshIndicator(
+        onRefresh: _refreshMessages,
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('Posts').snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+        
+            if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            }
+        
+            final posts = snapshot.data?.docs ?? [];
+        
+            return ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index].data() as Map<String, dynamic>;
+                final userId = post['userId'] as String;
+        
+                return FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('Users')
+                      .doc(userId)
+                      .get(),
+                  builder: (context, userSnapshot) {
+                    if (userSnapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    }
+        
+                    if (userSnapshot.hasError || !userSnapshot.hasData) {
+                      return Container();
+                    }
+        
+                    final userData =
+                        userSnapshot.data?.data() as Map<String, dynamic>?;
+        
+                    return Card(
+                      elevation: 5,
+                      margin:
+                          const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      title: Text(
-                        post['text'] ?? '',
-                        style: TextStyle(
-                            fontFamily: GoogleFonts.nunito().fontFamily,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w700),
+                      color: Colors.white.withOpacity(0.42),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(
+                          post['text'] ?? '',
+                          style: TextStyle(
+                              fontFamily: GoogleFonts.nunito().fontFamily,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                'Posted by: ${userData?['username'] ?? 'Unknown User'}',
+                                style: TextStyle(
+                                    fontFamily: GoogleFonts.aBeeZee().fontFamily,
+                                    fontSize: 12,
+                                    color:
+                                        const Color.fromARGB(255, 39, 38, 38))),
+                            Text(
+                                '${userData?['university'] ?? 'Unknown University'}',
+                                style: TextStyle(
+                                    fontFamily: GoogleFonts.cardo().fontFamily,
+                                    fontSize: 12,
+                                    color:
+                                        const Color.fromARGB(255, 39, 38, 38))),
+                            const SizedBox(height: 2),
+                            Text(
+                                _formatDateTime(post['timestamp'] as Timestamp? ??
+                                    Timestamp.now()),
+                                style: TextStyle(
+                                    fontFamily: GoogleFonts.lobster().fontFamily,
+                                    fontSize: 9.8,
+                                    color:
+                                        const Color.fromARGB(255, 39, 38, 38))),
+                          ],
+                        ),
+                        onTap: () {
+                          navigateToProfilePage(userId);
+                        },
                       ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              'Posted by: ${userData?['username'] ?? 'Unknown User'}',
-                              style: TextStyle(
-                                  fontFamily: GoogleFonts.aBeeZee().fontFamily,
-                                  fontSize: 12,
-                                  color:
-                                      const Color.fromARGB(255, 39, 38, 38))),
-                          Text(
-                              '${userData?['university'] ?? 'Unknown University'}',
-                              style: TextStyle(
-                                  fontFamily: GoogleFonts.cardo().fontFamily,
-                                  fontSize: 12,
-                                  color:
-                                      const Color.fromARGB(255, 39, 38, 38))),
-                          const SizedBox(height: 2),
-                          Text(
-                              _formatDateTime(post['timestamp'] as Timestamp? ??
-                                  Timestamp.now()),
-                              style: TextStyle(
-                                  fontFamily: GoogleFonts.lobster().fontFamily,
-                                  fontSize: 9.8,
-                                  color:
-                                      const Color.fromARGB(255, 39, 38, 38))),
-                        ],
-                      ),
-                      onTap: () {
-                        navigateToProfilePage(userId);
-                      },
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

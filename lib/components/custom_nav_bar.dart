@@ -32,15 +32,14 @@ class cNavigationBar extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: onProfileIconPressed,
-          ),
-          IconButton(
-            onPressed: onChatPressed,
-            icon: Icon(Icons.message_outlined),
-          ),
-          
+          ),      
           IconButton(
             onPressed: onAlertPressed,
-            icon: Icon(Icons.add_alert_rounded),
+            icon: Icon(Icons.add_alert_rounded)
+                   ),
+                   IconButton(
+            onPressed: onChatPressed,
+            icon: Icon(Icons.message_outlined),
           ),
           
         ],

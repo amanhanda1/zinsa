@@ -100,7 +100,7 @@ class _FirstPageState extends State<FirstPage> with SingleTickerProviderStateMix
   void _navigateToLoginPage(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => PostPage()),
+      MaterialPageRoute(builder: (context) => LoginPage()),
     );
   }
 

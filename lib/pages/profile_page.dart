@@ -1,20 +1,20 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:zinsa/components/Friends_count.dart';
+import 'package:zinsa/components/Support_count.dart';
 import 'package:zinsa/components/custom_nav_bar.dart';
 import 'package:zinsa/components/edit_profile.dart';
 import 'package:zinsa/components/friend_button.dart';
-import 'package:zinsa/components/Friends_count.dart';
 import 'package:zinsa/components/hobbies.dart';
 import 'package:zinsa/components/postwid.dart';
-import 'package:zinsa/components/show_profile.dart';
-import 'package:zinsa/components/Support_count.dart';
+import 'package:zinsa/components/profile_photo.dart';
 import 'package:zinsa/messaging/chatroom.dart';
 import 'package:zinsa/pages/AlertPage.dart';
 import 'package:zinsa/pages/allmessage_page.dart';
 import 'package:zinsa/pages/first_page.dart';
 import 'package:zinsa/pages/home_page.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:zinsa/pages/notif_page.dart';
 import 'package:zinsa/pages/ongoing_events.dart';
 
@@ -97,6 +97,14 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
 
+    Future<void> _refreshMessages(userId) async {
+      Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => ProfilePage(userId: userId),),
+          );
+      await Future.delayed(Duration(seconds: 2));
+    }
+
     final currentUser = FirebaseAuth.instance.currentUser;
     final isOwnProfile = widget.userId == currentUser?.uid;
 
@@ -140,185 +148,194 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection("Users")
-            .doc(widget.userId)
-            .get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text("Error: ${snapshot.error}"),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(
-              child: Text("User data not found"),
-            );
-          }
-
-          final userData = snapshot.data!.data() as Map<String, dynamic>;
-          final name = userData['username'] ?? '';
-          final dob = userData['dob'] as Timestamp?;
-          final bio = userData['bio'] ?? '';
-          final universityName = userData['university'] ?? '';
-          final photoUrl = userData['photoUrl'] ?? '';
-
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Center(child: Text("P R O F I L E")),
-                const SizedBox(height: 18),
-                ProfilePhotoWidget(photoUrl: photoUrl),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Name: $name ",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: GoogleFonts.aBeeZee().fontFamily,
-                      ),
-                    ),
-                    if (dob != null) ...[
+      body: RefreshIndicator(
+        
+        onRefresh: ()=>_refreshMessages(FirebaseAuth.instance.currentUser!.uid!),
+        child: FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection("Users")
+              .doc(widget.userId)
+              .get(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+        
+            if (snapshot.hasError) {
+              return Center(
+                child: Text("Error: ${snapshot.error}"),
+              );
+            }
+        
+            if (!snapshot.hasData || snapshot.data == null) {
+              return const Center(
+                child: Text("User data not found"),
+              );
+            }
+        
+            final userData = snapshot.data!.data() as Map<String, dynamic>;
+            final name = userData['username'] ?? '';
+            final dob = userData['dob'] as Timestamp?;
+            final bio = userData['bio'] ?? '';
+            final universityName = userData['university'] ?? '';
+            final photoUrl = userData['profilePicUrl'] ?? '';
+        
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Center(child: Text("P R O F I L E")),
+                  const SizedBox(height: 18),
+                  Container(
+                    width: 100, // Adjust width as needed
+                    height: 100, // Adjust height as needed
+                    child: ProfilePhotoWidget(
+                        photoUrl: photoUrl.isNotEmpty ? photoUrl : null),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       Text(
-                        "{${calculateAge(dob)}}",
+                        "Name: $name ",
                         style: TextStyle(
                           color: Colors.white,
                           fontFamily: GoogleFonts.aBeeZee().fontFamily,
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {
-                          if (!isOwnProfile) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ChatRoomPage(
-                                  senderUserId:
-                                      currentUser!.uid, // Current user ID
-                                  receiverUserId:
-                                      widget.userId, // Profile user ID
+                      if (dob != null) ...[
+                        Text(
+                          "{${calculateAge(dob)}}",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: GoogleFonts.aBeeZee().fontFamily,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            if (!isOwnProfile) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatRoomPage(
+                                    senderUserId:
+                                        currentUser!.uid, // Current user ID
+                                    receiverUserId:
+                                        widget.userId, // Profile user ID
+                                  ),
                                 ),
-                              ),
-                            );
-                          }
-                        },
-                        icon:
-                            const Icon(Icons.chat_bubble, color: Colors.white),
-                      ),
+                              );
+                            }
+                          },
+                          icon:
+                              const Icon(Icons.chat_bubble, color: Colors.white),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                Text(universityName,
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontFamily: GoogleFonts.josefinSans().fontFamily)),
-                const SizedBox(height: 8),
-                if (isOwnProfile)
+                  ),
+                  Text(universityName,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontFamily: GoogleFonts.josefinSans().fontFamily)),
+                  const SizedBox(height: 8),
+                  if (isOwnProfile)
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditProfileScreen(),
+                          ),
+                        );
+                      },
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all<Color>(
+                          Colors.orange.shade800,
+                        ),
+                        shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                          const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                            side: BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Edit Profile',
+                        style:
+                            TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
+                      ),
+                    )
+                  else
+                    FriendButton(userId: widget.userId),
+                  const SizedBox(
+                    height: 12,
+                  ),
+                  Text(
+                    "$bio",
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      backgroundColor: Colors.orange,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FriendCountWidget(userId: widget.userId),
+                      Spacer(),
+                      SupportCountWidget(viewedUserId: widget.userId),
+                    ],
+                  ),
+                  const Divider(
+                    color: Colors.black,
+                    thickness: 1,
+                    height: 20,
+                  ),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MyHomePage(),
-                        ),
-                      );
+                      setState(() {
+                        showPosts = !showPosts;
+                      });
                     },
                     style: ButtonStyle(
                       backgroundColor: MaterialStateProperty.all<Color>(
                         Colors.orange.shade800,
                       ),
                       shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                        const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
-                          side: BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                          side: const BorderSide(
+                              color: Color.fromARGB(255, 0, 0, 0)),
                         ),
                       ),
                     ),
-                    child: const Text(
-                      'Edit Profile',
-                      style:
-                          TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
-                    ),
-                  )
-                else
-                  FriendButton(userId: widget.userId),
-                const SizedBox(
-                  height: 12,
-                ),
-                Text(
-                  "$bio",
-                  style: const TextStyle(
-                    color: Color.fromARGB(255, 0, 0, 0),
-                    backgroundColor: Colors.orange,
-                    fontStyle: FontStyle.italic,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FriendCountWidget(userId: widget.userId),
-                    Spacer(), 
-                    SupportCountWidget(viewedUserId: widget.userId),
-                  ],
-                ),
-                const Divider(
-                  color: Colors.black,
-                  thickness: 1,
-                  height: 20,
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      showPosts = !showPosts;
-                    });
-                  },
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all<Color>(
-                      Colors.orange.shade800,
-                    ),
-                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                        side: const BorderSide(
-                            color: Color.fromARGB(255, 0, 0, 0)),
-                      ),
+                    // Use a conditional expression to set the child property based on isOwnProfile
+                    child: Text(
+                      isOwnProfile
+                          ? (showPosts ? 'Add Hobbies' : 'Edit Posts')
+                          : (showPosts ? 'Show Hobbies' : 'Show Posts'),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
-                  // Use a conditional expression to set the child property based on isOwnProfile
-                  child: Text(
-                    isOwnProfile
-                        ? (showPosts ? 'Add Hobbies' : 'Edit Posts')
-                        : (showPosts ? 'Show Hobbies' : 'Show Posts'),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (showPosts)
-                  PostsWidget(userId: widget.userId)
-                else
-                  HobbiesWidget(
-                      userId: widget.userId,
-                      isOwnProfile: widget.userId ==
-                          FirebaseAuth.instance.currentUser!.uid),
-                const SizedBox(height: 8),
-              ],
-            ),
-          );
-        },
+                  const SizedBox(height: 8),
+                  if (showPosts)
+                    PostsWidget(userId: widget.userId)
+                  else
+                    HobbiesWidget(
+                        userId: widget.userId,
+                        isOwnProfile: widget.userId ==
+                            FirebaseAuth.instance.currentUser!.uid),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            );
+          },
+        ),
       ),
       bottomNavigationBar: cNavigationBar(
         onEventPressed: navigateToEventPage,
