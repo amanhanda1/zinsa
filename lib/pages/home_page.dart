@@ -87,7 +87,6 @@ class PostPage extends StatelessWidget {
       );
     }
 
-    final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(206, 41, 152, 128),
