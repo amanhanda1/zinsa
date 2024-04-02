@@ -40,7 +40,7 @@ class _AddAlertsPageState extends State<AddAlertsPage> {
                 await FirebaseFirestore.instance.collection("Alerts").add({
                   'userId': currentUser.uid,
                   'text': _textController.text,
-                  'timestamp': FieldValue.serverTimestamp(),
+                  'timestamp': DateTime.now(), // Add timestamp
                   'username': username,
                   'university': university,
                 });
@@ -74,5 +74,27 @@ class _AddAlertsPageState extends State<AddAlertsPage> {
     var userData = userDoc.data() as Map<String, dynamic>?;
 
     return userData?['university'] ?? 'Unknown University';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _deleteOldAlerts(); // Start deleting old alerts when the page is initialized
+  }
+
+  Future<void> _deleteOldAlerts() async {
+    final now = DateTime.now();
+    final twentyFourHoursAgo = now.subtract(Duration(hours: 24));
+
+    // Query alerts older than 24 hours
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('Alerts')
+        .where('timestamp', isLessThan: twentyFourHoursAgo)
+        .get();
+
+    // Delete each alert
+    for (final doc in querySnapshot.docs) {
+      await doc.reference.delete();
+    }
   }
 }

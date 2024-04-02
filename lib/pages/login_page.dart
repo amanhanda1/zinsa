@@ -1,10 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:zinsa/components/forget_password%5BEL%5D.dart';
-import 'package:zinsa/components/mytextfield.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:zinsa/components/error.dart';
-import 'package:zinsa/login/log_in_with_google.dart';
-import 'package:zinsa/pages/add_friend.dart';
+import 'package:zinsa/components/forget_password.dart';
+import 'package:zinsa/components/mytextfield.dart';
 import 'package:zinsa/pages/home_page.dart';
 class LoginPage extends StatefulWidget {
  
@@ -72,11 +70,8 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 child:const Text("Login",style: TextStyle(color: Color.fromARGB(255, 65, 64, 64)),)),
                 const SizedBox(height:10),
-             
             PasswordResetWidget(),
-            const SizedBox(height:12),
-            const Text("OR",style:TextStyle(fontSize: 26,fontWeight: FontWeight.bold,color: Colors.white)),
-            GoogleSignInWidget()
+            
             
           ]),
         ));

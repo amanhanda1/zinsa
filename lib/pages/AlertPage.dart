@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:zinsa/components/custom_nav_bar.dart';
+import 'package:zinsa/messaging/chatroom.dart';
 import 'package:zinsa/pages/add_alerts.dart';
 import 'package:zinsa/pages/add_friend.dart';
 import 'package:zinsa/pages/allmessage_page.dart';
@@ -11,7 +12,6 @@ import 'package:zinsa/pages/first_page.dart';
 import 'package:zinsa/pages/home_page.dart';
 import 'package:zinsa/pages/ongoing_events.dart';
 import 'package:zinsa/pages/profile_page.dart';
-import 'package:zinsa/messaging/chatroom.dart';
 
 class Stories extends StatefulWidget {
   const Stories({Key? key}) : super(key: key);
@@ -160,7 +160,7 @@ class _StoriesState extends State<Stories> {
                                   fontSize: 12,
                                   color: const Color.fromARGB(255, 39, 38, 38))),
                               Text(
-                                'tap to join',
+                                'enquire',
                                 style: TextStyle(
                                   fontFamily: GoogleFonts.cardo().fontFamily,
                                   fontSize: 12,
@@ -180,7 +180,7 @@ class _StoriesState extends State<Stories> {
                               MaterialPageRoute(
                                 builder: (context) => ChatRoomPage(
                                   senderUserId:
-                                      currentUser!.uid, // Current user ID
+                                      currentUser.uid, // Current user ID
                                   receiverUserId:
                                       userId, // Profile user ID
                                 ),
@@ -228,5 +228,27 @@ class _StoriesState extends State<Stories> {
       return 'Unknown Date and Time';
     }
     return DateFormat('MMMM dd, yyyy').format(dateTime);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _deleteOldAlerts(); // Start deleting old alerts when the page is initialized
+  }
+
+  Future<void> _deleteOldAlerts() async {
+    final now = DateTime.now();
+    final twentyFourHoursAgo = now.subtract(Duration(hours: 24));
+
+    // Query alerts older than 24 hours
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('Alerts')
+        .where('timestamp', isLessThan: twentyFourHoursAgo)
+        .get();
+
+    // Delete each alert
+    for (final doc in querySnapshot.docs) {
+      await doc.reference.delete();
+    }
   }
 }

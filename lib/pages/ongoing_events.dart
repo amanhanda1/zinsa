@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:zinsa/components/custom_nav_bar.dart';
 import 'package:zinsa/pages/AlertPage.dart';
 import 'package:zinsa/pages/allmessage_page.dart';
@@ -9,7 +10,6 @@ import 'package:zinsa/pages/event_register.dart';
 import 'package:zinsa/pages/first_page.dart';
 import 'package:zinsa/pages/home_page.dart';
 import 'package:zinsa/pages/profile_page.dart';
-import 'package:intl/intl.dart';
 
 class Events extends StatefulWidget {
   const Events({Key? key});
@@ -24,46 +24,52 @@ class _EventsState extends State<Events> {
   DateTime? startDate;
   DateTime? endDate;
   String? currentUserUniversity;
-  int count=0;
+  int count = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchEvents();
+    checkAndArchivePastEvents();
+  }
 
   Future<void> createEvent() async {
-  try {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final userSnapshot = await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(currentUser!.uid)
-        .get();
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(currentUser!.uid)
+          .get();
 
-    final dynamic universityData = userSnapshot['university'];
-    currentUserUniversity =
-        universityData != null ? universityData as String : null;
+      final dynamic universityData = userSnapshot['university'];
+      currentUserUniversity =
+          universityData != null ? universityData as String : null;
 
-    if (startDate != null &&
-        endDate != null &&
-        currentUserUniversity != null &&
-        eventNameController.text.isNotEmpty) {
-      final eventRef = await FirebaseFirestore.instance.collection('Events').add({
-        'eventName': eventNameController.text,
-        'startDate': startDate,
-        'endDate': endDate,
-        'university': currentUserUniversity,
-      });
+      if (startDate != null &&
+          endDate != null &&
+          currentUserUniversity != null &&
+          eventNameController.text.isNotEmpty) {
+        final eventRef = await FirebaseFirestore.instance.collection('Events').add({
+          'eventName': eventNameController.text,
+          'startDate': startDate,
+          'endDate': endDate,
+          'university': currentUserUniversity,
+        });
 
-      final eventId = eventRef.id; // Get the auto-generated document ID
-      await eventRef.update({'eventId': eventId}); // Update the event document with the event ID
+        final eventId = eventRef.id; // Get the auto-generated document ID
+        await eventRef.update({'eventId': eventId}); // Update the event document with the event ID
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Event created successfully')),
-      );
-    } else {
-      print(
-          'Please select both start and end dates, ensure university is set, and provide a non-empty event name.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Event created successfully')),
+        );
+      } else {
+        print(
+            'Please select both start and end dates, ensure university is set, and provide a non-empty event name.');
+      }
+    } catch (e) {
+      print('Error creating event: $e');
     }
-  } catch (e) {
-    print('Error creating event: $e');
   }
-}
-
 
   Future<void> checkAndArchivePastEvents() async {
     final now = DateTime.now();
@@ -89,12 +95,6 @@ class _EventsState extends State<Events> {
           .doc(event.id)
           .delete();
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchEvents();
   }
 
   Future<void> _fetchEvents() async {
@@ -276,6 +276,7 @@ class _EventsState extends State<Events> {
         ),
       );
     }
+
     void navigateToChatPage(String userId) {
       Navigator.push(
         context,
@@ -284,7 +285,8 @@ class _EventsState extends State<Events> {
         ),
       );
     }
-    void navigateToAlertPage(){
+
+    void navigateToAlertPage() {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -356,13 +358,12 @@ class _EventsState extends State<Events> {
       bottomNavigationBar: cNavigationBar(
         onEventPressed: navigateToEventPage,
         onHomeIconPressed: navigateToHomePage,
-        onChatPressed: () =>navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
+        onChatPressed: () =>
+            navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
         onProfileIconPressed: () =>
             navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
         onAlertPressed: navigateToAlertPage,
       ),
-    
-  
     );
   }
 }

@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:zinsa/components/mytextfield.dart';
 import 'package:zinsa/components/error.dart';
+import 'package:zinsa/components/mytextfield.dart';
 import 'package:zinsa/components/showuniversities.dart';
-import 'package:zinsa/login/log_in_with_google.dart';
 import 'package:zinsa/pages/home_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -204,8 +203,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
-              GoogleSignInWidget()
             ],
           ),
         ),

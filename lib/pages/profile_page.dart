@@ -180,7 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
             final dob = userData['dob'] as Timestamp?;
             final bio = userData['bio'] ?? '';
             final universityName = userData['university'] ?? '';
-            final photoUrl = userData['profilePicUrl'] ?? '';
+            final photoUrl = userData['photoUrl'] ?? '';
         
             return SingleChildScrollView(
               child: Column(
@@ -192,7 +192,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     width: 100, // Adjust width as needed
                     height: 100, // Adjust height as needed
                     child: ProfilePhotoWidget(
-                        photoUrl: photoUrl.isNotEmpty ? photoUrl : null),
+                        photoUrl: photoUrl.isNotEmpty ? photoUrl : null,
+                        userId: widget.userId,),
+                        
                   ),
                   const SizedBox(height: 12),
                   Row(
