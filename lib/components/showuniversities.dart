@@ -28,7 +28,7 @@ class UniversityListScreenState extends State<UniversityListScreen> {
     if (user != null && user.email != null) {
       await FirebaseFirestore.instance
           .collection("Users")
-          .doc(user.uid!) // Assuming 'email' is the user identifier
+          .doc(user.uid) // Assuming 'email' is the user identifier
           .set({
         'university': universityName,
       }, SetOptions(merge: true));
@@ -68,7 +68,7 @@ class UniversityListScreenState extends State<UniversityListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    User? currentUser = context.read<User?>();
+    context.read<User?>();
 
     if (universities.isEmpty) {
       return const Scaffold(

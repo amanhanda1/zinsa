@@ -33,9 +33,9 @@ class _AddAlertsPageState extends State<AddAlertsPage> {
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: () async {
-                var username = await _getUsername(currentUser!.uid ?? '');
+                var username = await _getUsername(currentUser!.uid);
                 var university =
-                    await _getUserUniversity(currentUser.uid ?? '');
+                    await _getUserUniversity(currentUser.uid);
 
                 await FirebaseFirestore.instance.collection("Alerts").add({
                   'userId': currentUser.uid,
@@ -49,7 +49,7 @@ class _AddAlertsPageState extends State<AddAlertsPage> {
               },
               child: Text('add'),
               style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all<Color>(
+                backgroundColor: WidgetStateProperty.all<Color>(
                   Colors.orange.shade800,
                 ),
               ),

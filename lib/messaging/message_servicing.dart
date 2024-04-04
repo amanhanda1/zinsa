@@ -40,6 +40,7 @@ class MessagingService {
         'receiverUserId': receiverUserId,
         'message': message,
         'timestamp': FieldValue.serverTimestamp(),
+        'seen':false
       });
       await FirebaseFirestore.instance
           .collection('Users')

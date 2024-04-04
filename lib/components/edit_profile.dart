@@ -9,7 +9,6 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   TextEditingController nameController = TextEditingController();
   TextEditingController bioController = TextEditingController();
-  String? _profilePicUrl;
   String? _username;
   String? _bio;
   User? _user;
@@ -33,7 +32,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         setState(() {
           _username = userData.get('username');
           _bio = userData.get('bio');
-          _profilePicUrl = userData.get('profilePicUrl');
           nameController.text = _username ?? '';
           bioController.text = _bio ?? '';
         });

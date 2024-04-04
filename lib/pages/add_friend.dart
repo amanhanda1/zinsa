@@ -1,16 +1,16 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:zinsa/components/custom_nav_bar.dart';
 import 'package:zinsa/pages/AlertPage.dart';
 import 'package:zinsa/pages/allmessage_page.dart';
 import 'package:zinsa/pages/first_page.dart';
-import 'package:zinsa/pages/ongoing_events.dart';
-import 'package:zinsa/pages/profile_page.dart';
 import 'package:zinsa/pages/home_page.dart';
 import 'package:zinsa/pages/ongoing_events.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:zinsa/pages/profile_page.dart';
 
 class AddFriendPage extends StatefulWidget {
   const AddFriendPage({super.key});
@@ -111,14 +111,6 @@ class _AddFriendPageState extends State<AddFriendPage> {
       );
     }
 
-    void navigateToUniversityListScreen() {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AddFriendPage(),
-        ),
-      );
-    }
 
     void navigateToProfilePage(String userId) {
       Navigator.push(
@@ -263,9 +255,9 @@ class _AddFriendPageState extends State<AddFriendPage> {
       bottomNavigationBar: cNavigationBar(
         onEventPressed: navigateToEventPage,
         onHomeIconPressed: navigateToHomePage,
-        onChatPressed: () =>navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
+        onChatPressed: () =>navigateToChatPage(FirebaseAuth.instance.currentUser!.uid),
         onProfileIconPressed: () =>
-            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
+            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid),
         onAlertPressed: navigateToAlertPage,
       ),
     );

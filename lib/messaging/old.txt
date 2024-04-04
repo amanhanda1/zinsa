@@ -1,0 +1,640 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart' show AppBar, AsyncSnapshot, BuildContext, Center, CircularProgressIndicator, Color, ConnectionState, Container, Icon, Icons, Key, ListTile, ListView, MainAxisAlignment, MaterialPageRoute, Navigator, Row, Scaffold, StatelessWidget, StreamBuilder, Text, Widget;
+import 'package:zinsa/components/custom_nav_bar.dart';
+import 'package:zinsa/messaging/chatroom.dart';
+import 'package:zinsa/pages/AlertPage.dart';
+import 'package:zinsa/pages/first_page.dart';
+import 'package:zinsa/pages/home_page.dart';
+import 'package:zinsa/pages/ongoing_events.dart';
+import 'package:zinsa/pages/profile_page.dart';
+
+class allMessages extends StatelessWidget {
+  final String userId;
+
+  const allMessages({Key? key, required this.userId}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    void navigateToHomePage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PostPage(),
+        ),
+      );
+    }
+
+    void logout() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const FirstPage(),
+        ),
+      );
+    }
+
+    
+
+    void navigateToProfilePage(String userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfilePage(userId: userId),
+        ),
+      );
+    }
+
+    void navigateToEventPage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const Events(),
+        ),
+      );
+    }
+
+    void navigateToChatPage(String userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => allMessages(userId: userId),
+        ),
+      );
+    }
+
+    void navigateToAlertPage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const Stories(),
+        ),
+      );
+    }
+    final currentUser = FirebaseAuth.instance.currentUser;
+    return Scaffold(
+      backgroundColor: const Color.fromARGB(206, 41, 152, 128),
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(206, 41, 152, 128),
+        leading: const Icon(Icons.message_outlined),
+        title: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [Text("ZINSA")],
+        ),
+      ),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userId)
+            .collection('Conversations')
+            .snapshots(),
+        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(child: Text('No conversations yet.'));
+          }
+          return ListView(
+            children: snapshot.data!.docs.map((doc) {
+              String conversationId = doc['conversationId'];
+              String senderId = doc['senderUserId'];
+              String receiverId = doc['receiverUserId'];
+              String otherUserId = senderId == currentUser!.uid ? receiverId : senderId;
+              return StreamBuilder(
+                stream: FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(otherUserId)
+                    .snapshots(),
+                builder: (context, AsyncSnapshot<DocumentSnapshot> userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return Container(); // Placeholder until data is loaded
+                  }
+                  if (userSnapshot.hasError) {
+                    return Text('Error: ${userSnapshot.error}');
+                  }
+                  if (!userSnapshot.hasData) {
+                    return Container(); // Placeholder for empty user data
+                  }
+                  String otherUserName = userSnapshot.data!['username'];
+                  return StreamBuilder(
+                    stream: FirebaseFirestore.instance
+                        .collection('Conversations')
+                        .doc(conversationId)
+                        .collection('Messages')
+                        .orderBy('timestamp', descending: true)
+                        .limit(1)
+                        .snapshots(),
+                    builder: (context, AsyncSnapshot<QuerySnapshot> messageSnapshot) {
+                      if (messageSnapshot.connectionState == ConnectionState.waiting) {
+                        return Container(); // Placeholder until data is loaded
+                      }
+                      if (messageSnapshot.hasError) {
+                        return Text('Error: ${messageSnapshot.error}');
+                      }
+                      if (!messageSnapshot.hasData || messageSnapshot.data!.docs.isEmpty) {
+                        return Container(); // Placeholder for empty chat
+                      }
+                      String lastMessage = messageSnapshot.data!.docs.first['message'];
+                      return ListTile(
+                        title: Text(otherUserName),
+                        subtitle: Text(lastMessage),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatRoomPage(senderUserId: currentUser.uid, receiverUserId: otherUserId),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              );
+            }).toList(),
+          );
+        },
+      ),
+      bottomNavigationBar: cNavigationBar(
+        onEventPressed: navigateToEventPage,
+        onHomeIconPressed: navigateToHomePage,
+        onChatPressed: () =>{},
+        onProfileIconPressed: () =>
+            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
+        onAlertPressed: navigateToAlertPage,
+      ),
+    );
+  }
+}
+this is the page where all chats of currently logged in users show i want that if there is a new message from the other user than at the row end a orange dot will show and list that is where we click to chat the user there a white hover effect will show  if there is a new message
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class MessagingService {
+  // Fetch messages between two users
+  Stream<QuerySnapshot> getMessages({
+    required String senderUserId,
+    required String receiverUserId,
+  }) {
+    try {
+      String conversationId =
+          generateConversationId(senderUserId, receiverUserId);
+      // Fetch messages from the Messages subcollection under the conversation document
+      return FirebaseFirestore.instance
+          .collection('Conversations')
+          .doc(conversationId)
+          .collection('Messages')
+          .orderBy('timestamp', descending: true)
+          .snapshots();
+    } catch (e) {
+      print('Error getting messages: $e');
+      throw e;
+    }
+  }
+
+  // Send a message
+  Future<void> sendMessage({
+    required String senderUserId,
+    required String receiverUserId,
+    required String message,
+  }) async {
+    try {
+      String conversationId =
+          generateConversationId(senderUserId, receiverUserId);
+      await FirebaseFirestore.instance
+          .collection('Conversations')
+          .doc(conversationId)
+          .collection('Messages')
+          .add({
+        'senderUserId': senderUserId,
+        'receiverUserId': receiverUserId,
+        'message': message,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(receiverUserId)
+          .collection('Conversations')
+          .doc(conversationId)
+          .set({
+        'conversationId': conversationId,
+        'receiverUserId': receiverUserId,
+        'senderUserId': senderUserId,
+      });
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(senderUserId)
+          .collection('Conversations')
+          .doc(conversationId)
+          .set({
+        'conversationId': conversationId,
+        'receiverUserId': receiverUserId,
+        'senderUserId': senderUserId, // Add sender's ID
+      });
+    } catch (e) {
+      print('Error sending message: $e');
+      throw e;
+    }
+  }
+
+  // Generate conversation ID
+  String generateConversationId(String senderUserId, String receiverUserId) {
+    List<String> userIds = [senderUserId, receiverUserId]..sort();
+    return '${userIds[0]}_${userIds[1]}';
+  }
+}
+this is my message_service.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:zinsa/messaging/message_servicing.dart';
+import 'package:zinsa/pages/profile_page.dart'; // Import the messaging service
+
+class ChatRoomPage extends StatefulWidget {
+  final String senderUserId;
+  final String receiverUserId;
+
+  const ChatRoomPage({
+    Key? key,
+    required this.senderUserId,
+    required this.receiverUserId,
+  }) : super(key: key);
+
+  @override
+  _ChatRoomPageState createState() => _ChatRoomPageState();
+}
+
+class _ChatRoomPageState extends State<ChatRoomPage> {
+  final TextEditingController _messageController = TextEditingController();
+  String _receiverUsername = '';
+  bool _isHovering = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReceiverUsername(); // Fetch the receiver's username when the widget initializes
+  }
+
+  Future<void> _fetchReceiverUsername() async {
+    final DocumentSnapshot receiverSnapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(widget.receiverUserId)
+        .get();
+
+    if (receiverSnapshot.exists) {
+      setState(() {
+        _receiverUsername = receiverSnapshot['username'];
+      });
+    }
+  }
+
+  String generateConversationId(String senderUserId, String receiverUserId) {
+    List<String> userIds = [senderUserId, receiverUserId]..sort();
+    return '${userIds[0]}_${userIds[1]}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    void navigateToEventPage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfilePage(userId: widget.receiverUserId),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color.fromARGB(206, 41, 152, 128),
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(206, 41, 152, 128),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        actions: [
+  Expanded(
+    child: Align(
+      alignment: Alignment.center,
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: _isHovering ? Colors.orange : Color.fromARGB(0, 250, 248, 248),
+          borderRadius: BorderRadius.circular(8.0), // adjust the radius as needed
+        ),
+        child: ElevatedButton(
+          onPressed: navigateToEventPage,
+          onHover: (isHovering) {
+            setState(() {
+              _isHovering = isHovering;
+            });
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor:_isHovering ? Colors.orange : Color.fromARGB(0, 250, 248, 248), // set the button background to transparent
+            elevation: 0, // Remove elevation
+          ),
+          child: Text(
+            _receiverUsername.toUpperCase()+' >',
+            style: const TextStyle(fontSize: 22, color: Colors.black),
+          ),
+        ),
+      ),
+    ),
+  ),
+],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: MessagingService().getMessages(
+                senderUserId: widget.senderUserId,
+                receiverUserId: widget.receiverUserId,
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  print('Error: ${snapshot.error}');
+                }
+
+                final messages = snapshot.data?.docs ?? [];
+
+                return ListView.builder(
+                  reverse: true,
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final messageData =
+                        messages[index].data() as Map<String, dynamic>;
+                    final String message = messageData['message'];
+                    final String senderUserId = messageData['senderUserId'];
+
+                    // Determine if the message is from the sender or receiver
+                    final bool isSenderMessage =
+                        senderUserId == widget.senderUserId;
+
+                    return ListTile(
+                      title: Align(
+                        alignment: isSenderMessage
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isSenderMessage ? Colors.blue : Colors.grey,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            message,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration:
+                        const InputDecoration(hintText: 'Type your message...'),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: () {
+                    final String message = _messageController.text.trim();
+                    if (message.isNotEmpty) {
+                      MessagingService().sendMessage(
+                        senderUserId: widget.senderUserId,
+                        receiverUserId: widget.receiverUserId,
+                        message: message,
+                      );
+                      _messageController.clear();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+this is chatroom please help by editing all three of them 
+
+
+
+
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:zinsa/components/custom_nav_bar.dart';
+import 'package:zinsa/messaging/chatroom.dart';
+import 'package:zinsa/pages/AlertPage.dart';
+import 'package:zinsa/pages/first_page.dart';
+import 'package:zinsa/pages/home_page.dart';
+import 'package:zinsa/pages/ongoing_events.dart';
+import 'package:zinsa/pages/profile_page.dart';
+
+class allMessages extends StatefulWidget {
+  final String userId;
+
+  const allMessages({Key? key, required this.userId}) : super(key: key);
+
+  @override
+  _allMessagesState createState() => _allMessagesState();
+}
+
+class _allMessagesState extends State<allMessages> {
+  @override
+  Widget build(BuildContext context) {
+    void navigateToHomePage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PostPage(),
+        ),
+      );
+    }
+
+    void logout() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const FirstPage(),
+        ),
+      );
+    }
+
+    void navigateToProfilePage(String userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfilePage(userId: userId),
+        ),
+      );
+    }
+
+    void navigateToEventPage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const Events(),
+        ),
+      );
+    }
+
+    void navigateToChatPage(String userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => allMessages(userId: userId),
+        ),
+      );
+    }
+
+    void navigateToAlertPage() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const Stories(),
+        ),
+      );
+    }
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    return Scaffold(
+      backgroundColor: const Color.fromARGB(206, 41, 152, 128),
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(206, 41, 152, 128),
+        leading: const Icon(Icons.message_outlined),
+        title: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [Text("ZINSA")],
+        ),
+      ),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance
+            .collection('Users')
+            .doc(widget.userId)
+            .collection('Conversations')
+            .snapshots(),
+        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(child: Text('No conversations yet.'));
+          }
+          return ListView(
+            children: snapshot.data!.docs.map((doc) {
+              String conversationId = doc['conversationId'];
+              String senderId = doc['senderUserId'];
+              String receiverId = doc['receiverUserId'];
+              String otherUserId =
+                  senderId == currentUser!.uid ? receiverId : senderId;
+              return StreamBuilder(
+                stream: FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(otherUserId)
+                    .snapshots(),
+                builder: (context, AsyncSnapshot<DocumentSnapshot> userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return Container(); // Placeholder until data is loaded
+                  }
+                  if (userSnapshot.hasError) {
+                    return Text('Error: ${userSnapshot.error}');
+                  }
+                  if (!userSnapshot.hasData) {
+                    return Container(); // Placeholder for empty user data
+                  }
+                  String otherUserName = userSnapshot.data!['username'];
+                  return StreamBuilder(
+                    stream: FirebaseFirestore.instance
+                        .collection('Conversations')
+                        .doc(conversationId)
+                        .collection('Messages')
+                        .orderBy('timestamp', descending: true)
+                        .limit(1)
+                        .snapshots(),
+                    builder: (context, AsyncSnapshot<QuerySnapshot> messageSnapshot) {
+                      if (messageSnapshot.connectionState == ConnectionState.waiting) {
+                        return Container(); // Placeholder until data is loaded
+                      }
+                      if (messageSnapshot.hasError) {
+                        return Text('Error: ${messageSnapshot.error}');
+                      }
+                      if (!messageSnapshot.hasData || messageSnapshot.data!.docs.isEmpty) {
+                        return Container(); // Placeholder for empty chat
+                      }
+                      String lastMessage = messageSnapshot.data!.docs.first['message'];
+                      bool hasNewMessage = messageSnapshot.data!.docs.first['senderUserId'] != currentUser!.uid;
+                      bool isMessageSeen = messageSnapshot.data!.docs.first['seen'] ?? false;
+                      return ListTile(
+                        title: Text(otherUserName),
+                        subtitle: Text(lastMessage),
+                        trailing: hasNewMessage && !isMessageSeen
+                            ? CircleAvatar(
+                                backgroundColor: Colors.orange,
+                                radius: 8.0,
+                              )
+                            : null,
+                        hoverColor: hasNewMessage && !isMessageSeen ? Colors.white.withOpacity(0.1) : null,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatRoomPage(
+                                senderUserId: currentUser.uid,
+                                receiverUserId: otherUserId,
+                              ),
+                            ),
+                          );
+                          // Update the 'seen' field for the last message in the conversation
+                          FirebaseFirestore.instance
+                              .collection('Conversations')
+                              .doc(conversationId)
+                              .collection('Messages')
+                              .doc(messageSnapshot.data!.docs.first.id)
+                              .update({'seen': true});
+                        },
+                      );
+                    },
+                  );
+                },
+              );
+            }).toList(),
+          );
+        },
+      ),
+      bottomNavigationBar: cNavigationBar(
+        onEventPressed: navigateToEventPage,
+        onHomeIconPressed: navigateToHomePage,
+        onChatPressed: () => {},
+        onProfileIconPressed: () =>
+            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
+        onAlertPressed: navigateToAlertPage,
+      ),
+    );
+  }
+}

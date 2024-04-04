@@ -99,9 +99,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
     Future<void> _refreshMessages(userId) async {
       Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => ProfilePage(userId: userId),),
-          );
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfilePage(userId: userId),
+        ),
+      );
       await Future.delayed(Duration(seconds: 2));
     }
 
@@ -149,8 +151,8 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
       body: RefreshIndicator(
-        
-        onRefresh: ()=>_refreshMessages(FirebaseAuth.instance.currentUser!.uid!),
+        onRefresh: () =>
+            _refreshMessages(FirebaseAuth.instance.currentUser!.uid),
         child: FutureBuilder<DocumentSnapshot>(
           future: FirebaseFirestore.instance
               .collection("Users")
@@ -162,26 +164,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: CircularProgressIndicator(),
               );
             }
-        
+
             if (snapshot.hasError) {
               return Center(
                 child: Text("Error: ${snapshot.error}"),
               );
             }
-        
+
             if (!snapshot.hasData || snapshot.data == null) {
               return const Center(
                 child: Text("User data not found"),
               );
             }
-        
+
             final userData = snapshot.data!.data() as Map<String, dynamic>;
             final name = userData['username'] ?? '';
             final dob = userData['dob'] as Timestamp?;
             final bio = userData['bio'] ?? '';
             final universityName = userData['university'] ?? '';
             final photoUrl = userData['photoUrl'] ?? '';
-        
+
             return SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -192,9 +194,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     width: 100, // Adjust width as needed
                     height: 100, // Adjust height as needed
                     child: ProfilePhotoWidget(
-                        photoUrl: photoUrl.isNotEmpty ? photoUrl : null,
-                        userId: widget.userId,),
-                        
+                      photoUrl: photoUrl.isNotEmpty ? photoUrl : null,
+                      userId: widget.userId,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -215,9 +217,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             fontFamily: GoogleFonts.aBeeZee().fontFamily,
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {
-                            if (!isOwnProfile) {
+                        if (!isOwnProfile) ...[
+                          IconButton(
+                            onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -229,11 +231,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ),
                               );
-                            }
-                          },
-                          icon:
-                              const Icon(Icons.chat_bubble, color: Colors.white),
-                        ),
+                            },
+                            icon: const Icon(Icons.chat_bubble,
+                                color: Colors.white),
+                          ),
+                        ],
                       ],
                     ],
                   ),
@@ -257,17 +259,19 @@ class _ProfilePageState extends State<ProfilePage> {
                         backgroundColor: MaterialStateProperty.all<Color>(
                           Colors.orange.shade800,
                         ),
-                        shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                        shape:
+                            MaterialStateProperty.all<RoundedRectangleBorder>(
                           const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero,
-                            side: BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
+                            side:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
                         ),
                       ),
                       child: const Text(
                         'Edit Profile',
-                        style:
-                            TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
+                        style: TextStyle(
+                            color: Color.fromARGB(255, 255, 255, 255)),
                       ),
                     )
                   else
@@ -343,9 +347,9 @@ class _ProfilePageState extends State<ProfilePage> {
         onEventPressed: navigateToEventPage,
         onHomeIconPressed: navigateToHomePage,
         onChatPressed: () =>
-            navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
+            navigateToChatPage(FirebaseAuth.instance.currentUser!.uid),
         onProfileIconPressed: () =>
-            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
+            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid),
         onAlertPressed: navigateToAlertPage,
       ),
     );

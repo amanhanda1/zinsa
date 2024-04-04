@@ -33,7 +33,7 @@ class _AddPostPageState extends State<AddPostPage> {
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: () async {
-                var username = await _getUsername(currentUser!.uid ?? '');
+                var username = await _getUsername(currentUser!.uid);
 
                 await FirebaseFirestore.instance.collection("Posts").add({
                   'userId': currentUser.uid,
@@ -46,7 +46,7 @@ class _AddPostPageState extends State<AddPostPage> {
               },
               child: Text('Post'),
               style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all<Color>(
+                backgroundColor: WidgetStateProperty.all<Color>(
                   Colors.orange.shade800,
                 ),
               ),

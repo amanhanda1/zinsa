@@ -93,8 +93,8 @@ class PostPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(206, 41, 152, 128),
         title: const Text("P O S T S"),
+        leading: const Icon(Icons.home_filled),
         actions: [
-          // Add an icon button to navigate to the AddFriendPage
           IconButton(
             onPressed: navigateToAddFriendPage,
             icon: Icon(Icons.person_add),
@@ -215,9 +215,9 @@ class PostPage extends StatelessWidget {
       bottomNavigationBar: cNavigationBar(
         onEventPressed: navigateToEventPage,
         onHomeIconPressed: navigateToHomePage,
-        onChatPressed: ()=>navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
+        onChatPressed: ()=>navigateToChatPage(FirebaseAuth.instance.currentUser!.uid),
         onProfileIconPressed: () =>
-            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
+            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid),
         onAlertPressed: navigateToAlertPage,
       ),
     );

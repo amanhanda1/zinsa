@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 class CustomUniversities {
   static List<Map<String, String>> getUniversities() {

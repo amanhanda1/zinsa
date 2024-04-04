@@ -1,11 +1,12 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
-import 'package:zinsa/components/showuniversities.dart';
+import 'package:zinsa/pages/AlertPage.dart';
 import 'package:zinsa/pages/add_friend.dart';
 import 'package:zinsa/pages/home_page.dart';
 import 'package:zinsa/pages/login_page.dart';
 import 'package:zinsa/pages/profile_page.dart';
 import 'package:zinsa/pages/sign_up_page.dart';
-import 'package:zinsa/pages/AlertPage.dart';
 
 class FirstPage extends StatefulWidget {
   const FirstPage({Key? key}) : super(key: key);
@@ -80,7 +81,7 @@ class _FirstPageState extends State<FirstPage> with SingleTickerProviderStateMix
                   _navigateToSignUpPage(context);
                 },
                 style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
+                  backgroundColor: WidgetStateProperty.all<Color>(Colors.white),
                   minimumSize: MaterialStateProperty.all(const Size(999, 44)),
                 ),
                 child: Text(

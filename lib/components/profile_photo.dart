@@ -52,20 +52,17 @@ class _ProfilePhotoWidgetState extends State<ProfilePhotoWidget> {
         await storageRef.putFile(_imageFile!);
 
         final downloadUrl = await storageRef.getDownloadURL();
-        if (downloadUrl != null) {
-          await FirebaseFirestore.instance
-              .collection("Users")
-              .doc(FirebaseAuth.instance.currentUser!.uid)
-              .update({'photoUrl': downloadUrl});
-        }
-      } catch (e) {
+        await FirebaseFirestore.instance
+            .collection("Users")
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .update({'photoUrl': downloadUrl});
+            } catch (e) {
         print('Error uploading image: $e');
       }
     }
   }
 
   void _showOptionsDialog() {
-    final currentUser = FirebaseAuth.instance.currentUser;
     final isCurrentUser =
         FirebaseAuth.instance.currentUser?.uid == widget.userId;
     showDialog(

@@ -298,6 +298,7 @@ class _EventsState extends State<Events> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(206, 41, 152, 128),
       appBar: AppBar(
+        leading:const Icon(Icons.event),
         backgroundColor: const Color.fromARGB(206, 41, 152, 128),
         title: const Text("E V E N T S"),
       ),
@@ -353,15 +354,16 @@ class _EventsState extends State<Events> {
         onPressed: () {
           _showAddEventDialog(context);
         },
+        backgroundColor: const Color.fromARGB(255, 230, 128, 11),
         child: const Icon(Icons.add, color: Colors.black),
       ),
       bottomNavigationBar: cNavigationBar(
         onEventPressed: navigateToEventPage,
         onHomeIconPressed: navigateToHomePage,
         onChatPressed: () =>
-            navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
+            navigateToChatPage(FirebaseAuth.instance.currentUser!.uid),
         onProfileIconPressed: () =>
-            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid!),
+            navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid),
         onAlertPressed: navigateToAlertPage,
       ),
     );

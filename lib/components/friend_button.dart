@@ -30,7 +30,7 @@ class _FriendButtonState extends State<FriendButton> {
     final userDoc =
         FirebaseFirestore.instance.collection('Users').doc(currentUser.uid);
     final friendDoc = userDoc.collection('Friends').doc(widget.userId);
-    final sprtingData = userDoc.collection('Supportings').doc(widget.userId);
+    userDoc.collection('Supportings').doc(widget.userId);
     final friendSnapshot = await friendDoc.get();
 
     setState(() {

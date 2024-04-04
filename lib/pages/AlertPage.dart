@@ -82,6 +82,7 @@ class _StoriesState extends State<Stories> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(206, 41, 152, 128),
       appBar: AppBar(
+        leading: const Icon(Icons.add_alert),
         backgroundColor: const Color.fromARGB(206, 41, 152, 128),
         title: const Text("Alerts"),
       ),
@@ -214,7 +215,7 @@ class _StoriesState extends State<Stories> {
       bottomNavigationBar: cNavigationBar(
         onEventPressed: navigateToEventPage,
         onHomeIconPressed: navigateToHomePage,
-        onChatPressed: ()=>navigateToChatPage(FirebaseAuth.instance.currentUser!.uid!),
+        onChatPressed: ()=>navigateToChatPage(FirebaseAuth.instance.currentUser!.uid),
         onProfileIconPressed: () =>
             navigateToProfilePage(FirebaseAuth.instance.currentUser!.uid),
         onAlertPressed: () {},

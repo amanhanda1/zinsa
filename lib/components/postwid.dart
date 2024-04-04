@@ -49,7 +49,6 @@ class _PostsWidgetState extends State<PostsWidget> {
   }
 
   Widget _buildPostTile(DocumentSnapshot post, int index) {
-    bool isEditEnabled = editEnabledList.length > index ? editEnabledList[index] : true;
 
     return ListTile(
       title: Text(
@@ -111,9 +110,6 @@ class _PostsWidgetState extends State<PostsWidget> {
 
   String _formatDateTime(Timestamp timestamp) {
     final dateTime = timestamp.toDate();
-    if (dateTime == null) {
-      return 'Unknown Date and Time';
-    }
     return DateFormat('MMMM dd, yyyy').format(dateTime);
   }
 
