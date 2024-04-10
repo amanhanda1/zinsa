@@ -30,7 +30,7 @@ class _NotificationPageState extends State<NotificationPage> {
       backgroundColor: const Color.fromARGB(206, 41, 152, 128),
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(206, 41, 152, 128),
-        leading: const Icon(Icons.notifications_rounded),
+        leading:  IconButton( icon:Icon(Icons.arrow_back_rounded), onPressed: () {  Navigator.pop(context);},),
         title: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [Text("N O T I F I C A T I O N S")],
@@ -93,11 +93,26 @@ class _NotificationPageState extends State<NotificationPage> {
     }
   }
 
-  String _formatDateTime(Timestamp? timestamp) {
-    final dateTime = timestamp?.toDate();
-    if (dateTime == null) {
-      return 'Unknown Date and Time';
+
+
+String _formatDateTime(Timestamp? timestamp) {
+  final now = DateTime.now();
+  final dateTime = timestamp?.toDate();
+  if (dateTime == null) {
+    return 'Unknown Date and Time';
+  }
+  
+  final difference = now.difference(dateTime);
+  if (difference.inHours < 24) {
+    if (difference.inHours == 0) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inHours == 1) {
+      return '1 hour ago';
+    } else {
+      return '${difference.inHours} hours ago';
     }
+  } else {
     return DateFormat('MMMM dd, yyyy').format(dateTime);
   }
+}
 }
