@@ -102,6 +102,7 @@ class _EventRegistrationFormState extends State<EventRegistrationForm> {
               department = value;
             },
           ),
+
           const SizedBox(height: 20),
           ElevatedButton(
             style: ButtonStyle(

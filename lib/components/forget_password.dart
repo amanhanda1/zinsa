@@ -91,7 +91,7 @@ class _PasswordResetWidgetState extends State<PasswordResetWidget> {
                 child: Text(
                   "Forgot Password?",
                   style: TextStyle(
-                    color: Color.fromARGB(255, 0, 0, 0),
+                    color: const Color.fromARGB(255, 230, 128, 11),
                     fontSize: 16,
                   ),
                 ),

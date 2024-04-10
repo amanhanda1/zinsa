@@ -1,7 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:zinsa/components/friend_button.dart';
 import 'package:zinsa/pages/profile_page.dart';
 
 class NotificationPage extends StatefulWidget {
@@ -16,8 +17,7 @@ class NotificationPage extends StatefulWidget {
 class _NotificationPageState extends State<NotificationPage> {
   @override
   Widget build(BuildContext context) {
-     void navigateToProfilePage(String userId) {
-      print('Navigating to profile page for user ID: $userId');
+    void navigateToProfilePage(String userId) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -25,6 +25,7 @@ class _NotificationPageState extends State<NotificationPage> {
         ),
       );
     }
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(206, 41, 152, 128),
       appBar: AppBar(
@@ -36,7 +37,7 @@ class _NotificationPageState extends State<NotificationPage> {
         ),
       ),
       body: FutureBuilder(
-        future: getNotifications(), 
+        future: getNotifications(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -49,7 +50,6 @@ class _NotificationPageState extends State<NotificationPage> {
           }
           return ListView(
             children: snapshot.data!.docs.map((doc) {
-              // Display each notification in a ListTile
               return Container(
                 margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 padding: EdgeInsets.all(11),
@@ -58,13 +58,14 @@ class _NotificationPageState extends State<NotificationPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: GestureDetector(
-                  onTap:()=> navigateToProfilePage(doc['user']),
+                  onTap: () => navigateToProfilePage(doc['user']),
                   child: ListTile(
                     title: Text(doc['message']),
                     subtitle: Text(
                       _formatDateTime(
                           doc['timestamp'] as Timestamp? ?? Timestamp.now()),
                     ),
+                    trailing: FriendButton(userId: doc['user']),
                   ),
                 ),
               );

@@ -87,6 +87,7 @@ class _AddAlertsPageState extends State<AddAlertsPage> {
     final twentyFourHoursAgo = now.subtract(Duration(hours: 24));
 
     // Query alerts older than 24 hours
+
     final querySnapshot = await FirebaseFirestore.instance
         .collection('Alerts')
         .where('timestamp', isLessThan: twentyFourHoursAgo)
@@ -94,6 +95,9 @@ class _AddAlertsPageState extends State<AddAlertsPage> {
 
     // Delete each alert
     for (final doc in querySnapshot.docs) {
+      await FirebaseFirestore.instance
+          .collection('ArchivedAlerts')
+          .add(doc.reference as Map<String, dynamic>);
       await doc.reference.delete();
     }
   }

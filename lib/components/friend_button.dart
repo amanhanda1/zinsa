@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FriendButton extends StatefulWidget {
   final String userId;
@@ -12,13 +13,21 @@ class FriendButton extends StatefulWidget {
 }
 
 class _FriendButtonState extends State<FriendButton> {
-  late bool isFriend;
+  late bool isFriend = false;
 
   @override
   void initState() {
-    super.initState();
-    isFriend = false; // Initialize with a default value
-    checkFriendStatus();
+    super.initState(); // Initialize with a default value
+    _loadFriendStatus();
+  }
+
+  Future<void> _loadFriendStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final storedStatus = prefs.getBool('friendStatus_${widget.userId}');
+    setState(() {
+      isFriend = storedStatus ?? false; // Default to false if not found
+    });
+    // Remove checkFriendStatus() from here as it's already called in setState
   }
 
   Future<void> checkFriendStatus() async {
@@ -30,8 +39,11 @@ class _FriendButtonState extends State<FriendButton> {
     final userDoc =
         FirebaseFirestore.instance.collection('Users').doc(currentUser.uid);
     final friendDoc = userDoc.collection('Friends').doc(widget.userId);
-    userDoc.collection('Supportings').doc(widget.userId);
     final friendSnapshot = await friendDoc.get();
+    final prefs = await SharedPreferences.getInstance();
+
+    // Update SharedPreferences here
+    await prefs.setBool('friendStatus_${widget.userId}', friendSnapshot.exists);
 
     setState(() {
       isFriend = friendSnapshot.exists;
@@ -74,13 +86,14 @@ class _FriendButtonState extends State<FriendButton> {
     };
     await friendDoc.set(friendData);
     await sprtingDoc.set(sprtData); // Set supporting data using friend's ID
-
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('friendStatus_${widget.userId}', true);
     setState(() {
       isFriend = true;
     });
 
     final notificationData = {
-      'user':currentUser.uid,
+      'user': currentUser.uid,
       'timestamp': FieldValue.serverTimestamp(),
       'message': '$currentUsername added you as a friend',
       'userId': currentUser.uid,
@@ -115,17 +128,26 @@ class _FriendButtonState extends State<FriendButton> {
     } catch (e) {
       print('Error removing friend: $e');
     }
-
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('friendStatus_${widget.userId}', false);
     setState(() {
       isFriend = false;
     });
+  }
+
+  Future<void> _toggleFriendStatus() async {
+    if (isFriend) {
+      await removeFriend();
+    } else {
+      await addFriend();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: ElevatedButton(
-        onPressed: isFriend ? removeFriend : addFriend,
+        onPressed: _toggleFriendStatus,
         style: ButtonStyle(
           backgroundColor: MaterialStateProperty.all<Color>(
               isFriend ? Colors.red : Colors.blue),
