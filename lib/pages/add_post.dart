@@ -61,7 +61,7 @@ class _AddPostPageState extends State<AddPostPage> {
   Future<String> _getUsername(String userId) async {
     var userDoc =
         await FirebaseFirestore.instance.collection('Users').doc(userId).get();
-    var userData = userDoc.data() as Map<String, dynamic>?;
+    var userData = userDoc.data();
 
     return userData?['username'] ?? 'Unknown User';
   }
