@@ -119,7 +119,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [Text("ZINSA")],
         ),
-        actions: [
+        actions: isOwnProfile?[
           // Add PopupMenuButton
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -148,7 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
-        ],
+        ]:null,
       ),
       body: RefreshIndicator(
         onRefresh: () =>

@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class PostsWidget extends StatefulWidget {
@@ -49,7 +50,7 @@ class _PostsWidgetState extends State<PostsWidget> {
   }
 
   Widget _buildPostTile(DocumentSnapshot post, int index) {
-
+    final bool isOwnProfile = post['userId'] == FirebaseAuth.instance.currentUser!.uid;
     return ListTile(
       title: Text(
         post['text'],
@@ -84,27 +85,29 @@ class _PostsWidgetState extends State<PostsWidget> {
         side: const BorderSide(color: Colors.black),
       ),
       contentPadding: const EdgeInsets.all(16.0),
-      trailing: PopupMenuButton<String>(
-        onSelected: (value) {
-          if (value == 'edit') {
-            // Call the function to edit the post
-            _editPost(post.id, post['text'], index);
-          } else if (value == 'delete') {
-            // Call the function to delete the post
-            _deletePost(post.id);
-          }
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem<String>(
-            value: 'edit',
-            child: Text('Edit'),
-          ),
-          const PopupMenuItem<String>(
-            value: 'delete',
-            child: Text('Delete'),
-          ),
-        ],
-      ),
+      trailing: isOwnProfile
+        ? PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'edit') {
+                // Call the function to edit the post
+                _editPost(post.id, post['text'], index);
+              } else if (value == 'delete') {
+                // Call the function to delete the post
+                _deletePost(post.id);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'edit',
+                child: Text('Edit'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'delete',
+                child: Text('Delete'),
+              ),
+            ],
+          )
+        : null,
     );
   }
 

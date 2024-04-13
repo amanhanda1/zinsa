@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:zinsa/components/custom_nav_bar.dart';
+import 'package:zinsa/components/eventnotif.dart';
 import 'package:zinsa/pages/AlertPage.dart';
 import 'package:zinsa/pages/allmessage_page.dart';
 import 'package:zinsa/pages/event_register.dart';
@@ -21,6 +21,7 @@ class Events extends StatefulWidget {
 class _EventsState extends State<Events> {
   List<Map<String, dynamic>> events = [];
   TextEditingController eventNameController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
   DateTime? startDate;
   DateTime? endDate;
   String? currentUserUniversity;
@@ -49,16 +50,21 @@ class _EventsState extends State<Events> {
           endDate != null &&
           currentUserUniversity != null &&
           eventNameController.text.isNotEmpty) {
-        final eventRef = await FirebaseFirestore.instance.collection('Events').add({
+        final eventRef =
+            await FirebaseFirestore.instance.collection('Events').add({
           'eventName': eventNameController.text,
+          'description': descriptionController.text,
           'startDate': startDate,
           'endDate': endDate,
           'university': currentUserUniversity,
+          'userId':currentUser.uid,
         });
 
         final eventId = eventRef.id; // Get the auto-generated document ID
-        await eventRef.update({'eventId': eventId}); // Update the event document with the event ID
-
+        await eventRef.update({
+          'eventId': eventId
+        }); // Update the event document with the event ID
+        EventNotificationSender(eventId: eventId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Event created successfully')),
         );
@@ -139,16 +145,37 @@ class _EventsState extends State<Events> {
 
   Future<void> _showAddEventDialog(BuildContext context) async {
     return showDialog(
+      barrierColor: Color.fromARGB(148, 5, 148, 117),
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Add Event'),
+          backgroundColor: Color.fromARGB(218, 12, 12, 12),
+          title: const Text(
+            'Add Event',
+            style: TextStyle(color: Colors.white),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: eventNameController,
-                decoration: const InputDecoration(labelText: 'Event Name'),
+                decoration: const InputDecoration(
+                  labelText: 'Event Name',
+                  fillColor: Colors.white60,
+                  labelStyle: TextStyle(color: Colors.white),
+                ),
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 5),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'description',
+                  fillColor: Colors.white60,
+                  labelStyle:
+                      TextStyle(color: Colors.white), // Change label color
+                ),
+                style: TextStyle(color: Colors.white),
+                controller: descriptionController,
               ),
               const SizedBox(height: 8),
               ElevatedButton(
@@ -183,8 +210,8 @@ class _EventsState extends State<Events> {
                 onPressed: () async {
                   DateTime? pickedEndDate = await showDatePicker(
                     context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime.now(),
+                    initialDate: startDate,
+                    firstDate: startDate!.toLocal(),
                     lastDate: DateTime(2030),
                   );
 
@@ -213,8 +240,10 @@ class _EventsState extends State<Events> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child:
-                  const Text('Cancel', style: TextStyle(color: Colors.black)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -222,7 +251,94 @@ class _EventsState extends State<Events> {
                 Navigator.of(context).pop();
               },
               child: const Text('Create Event',
-                  style: TextStyle(color: Colors.black)),
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showEditEventDialog(
+      BuildContext context, Map<String, dynamic> event) async {
+    print("Editing event: ${event['eventName']}");
+
+    DateTime newStartDate = event['startDate']?.toDate() ?? DateTime.now();
+    DateTime newEndDate = event['endDate']?.toDate() ?? DateTime.now();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Event: ${event['eventName']}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Event name (not editable)
+              Text('Event Name: ${event['eventName']}'),
+              SizedBox(height: 16),
+              // DatePicker for start date
+              TextButton(
+                onPressed: () async {
+                  DateTime? pickedStartDate = await showDatePicker(
+                    context: context,
+                    initialDate: newStartDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2030),
+                  );
+                  if (pickedStartDate != null) {
+                    setState(() {
+                      newStartDate = pickedStartDate;
+                    });
+                  }
+                },
+                child: Text(
+                    'Start Date: ${DateFormat('yyyy-MM-dd').format(newStartDate)}'),
+              ),
+              SizedBox(height: 16),
+              // DatePicker for end date
+              TextButton(
+                onPressed: () async {
+                  DateTime? pickedEndDate = await showDatePicker(
+                    context: context,
+                    initialDate: newEndDate,
+                    firstDate: newStartDate.toLocal(),
+                    lastDate: DateTime(2030),
+                  );
+                  if (pickedEndDate != null) {
+                    setState(() {
+                      newEndDate = pickedEndDate;
+                    });
+                  }
+                },
+                child: Text(
+                    'End Date: ${DateFormat('yyyy-MM-dd').format(newEndDate)}'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(
+                    context); // Close the dialog without saving changes
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Update the Firestore document with the new dates
+                await FirebaseFirestore.instance
+                    .collection('Events')
+                    .doc(event['eventId'])
+                    .update({
+                  'startDate': newStartDate,
+                  'endDate': newEndDate,
+                });
+                Navigator.pop(context); // Close the dialog after saving changes
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Event updated successfully')));
+              },
+              child: Text('Save Changes'),
             ),
           ],
         );
@@ -232,6 +348,15 @@ class _EventsState extends State<Events> {
 
   @override
   Widget build(BuildContext context) {
+    Future<void> _refreshMessages() async {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Events(),
+        ),
+      );
+      await Future.delayed(Duration(seconds: 2));
+    }
     void logout() {
       Navigator.push(
         context,
@@ -298,57 +423,92 @@ class _EventsState extends State<Events> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(206, 41, 152, 128),
       appBar: AppBar(
-        leading:const Icon(Icons.event),
+        leading: const Icon(Icons.event),
         backgroundColor: const Color.fromARGB(206, 41, 152, 128),
         title: const Text("E V E N T S"),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: events.isEmpty
-            ? const Center(child: Text('Waiting for the events'))
-            : ListView.builder(
-                itemCount: events.length,
-                itemBuilder: (context, index) {
-                  final event = events[index];
-                  final startDate = event['startDate']?.toDate();
-                  final endDate = event['endDate']?.toDate();
-
-                  if (startDate == null || endDate == null) {
-                    return SizedBox(); // Placeholder widget or handle the case of missing date data
-                  }
-
-                  final formattedDate =
-                      DateFormat('yyyy-MM-dd').format(startDate);
-                  final formattedEndDate =
-                      DateFormat('yyyy-MM-dd').format(endDate);
-
-                  return Card(
-                    color: Colors.white.withOpacity(0.8),
-                    child: ListTile(
-                      title: Text(event['eventName'] ?? ''),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        onRefresh: _refreshMessages,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: events.isEmpty
+              ? const Center(child: Text('Waiting for the events'))
+              : ListView.builder(
+                  itemCount: events.length,
+                  itemBuilder: (context, index) {
+                    final event = events[index];
+                    final startDate = event['startDate']?.toDate();
+                    final endDate = event['endDate']?.toDate();
+        
+                    if (startDate == null || endDate == null) {
+                      return SizedBox(); // Placeholder widget or handle the case of missing date data
+                    }
+        
+                    final formattedDate =
+                        DateFormat('dd-MM-yy').format(startDate);
+                    final formattedEndDate =
+                        DateFormat('dd-MM-yy').format(endDate);
+        
+                    return Card(
+                      color: Colors.white.withOpacity(0.8),
+                      child: Row(
                         children: [
-                          Text('From: $formattedDate to $formattedEndDate'),
-                          SizedBox(height: 4),
+                          Expanded(
+                            child: ListTile(
+                              title: Text(
+                                event['eventName'] ?? '',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      "description: ${event['description'] ?? "not updated"}",
+                                      style: TextStyle(fontSize: 14)),
+                                  Text(
+                                      'From: $formattedDate to $formattedEndDate',
+                                      style: TextStyle(fontSize: 11)),
+                                ],
+                              ),
+                              onTap: () {
+                                navigateToEventRegistrationPage(event['eventId']);
+                              },
+                            ),
+                          ),
+                          event['userId'] == FirebaseAuth.instance.currentUser?.uid ?
+                          PopupMenuButton(
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                child: ListTile(
+                                  leading: Icon(Icons.edit),
+                                  title: Text("Edit Event"),
+                                  onTap: () {
+                                    print("Editing event: ${event['eventName']}");
+                                    _showEditEventDialog(context, event);
+                                    Navigator.pop(
+                                        context); // Close the popup menu after selecting "Edit Event"
+                                  },
+                                ),
+                              ),
+                              PopupMenuItem(
+                                child: ListTile(
+                                  leading: Icon(Icons.delete),
+                                  title: Text("Delete Event"),
+                                  onTap: () {
+                                    // Handle delete event
+                                    _deleteEvent(event['eventId']);
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ):Container()
                         ],
                       ),
-                      onTap: () {
-                        navigateToEventRegistrationPage(event['eventId']);
-                      },
-                      onLongPress: () {
-                        final String contentToCopy =
-                            '${event['eventName']}\nFrom: $formattedDate to $formattedEndDate\nEvent ID: ${event['eventId']}';
-                        Clipboard.setData(ClipboardData(text: contentToCopy));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text('Content copied to clipboard')),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -367,5 +527,24 @@ class _EventsState extends State<Events> {
         onAlertPressed: navigateToAlertPage,
       ),
     );
+  }
+
+  void _deleteEvent(String eventId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Events')
+          .doc(eventId)
+          .delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Event deleted successfully')),
+      );
+      // After deleting the event, you might want to refresh the events list
+      // You can call _fetchEvents() or update the events list in the state accordingly
+    } catch (e) {
+      print('Error deleting event: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete event')),
+      );
+    }
   }
 }

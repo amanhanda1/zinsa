@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:zinsa/messaging/chatroom.dart';
 
 class EventsRegistrationPage extends StatelessWidget {
   final String? eventId;
 
-  const EventsRegistrationPage({Key? key, required this.eventId}) : super(key: key);
+  const EventsRegistrationPage({Key? key, required this.eventId})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +27,8 @@ class EventsRegistrationPage extends StatelessWidget {
             const Center(
               child: Text(
                 'Registered Users:',
-                style: TextStyle(color: Color.fromARGB(255, 0, 0, 0), fontSize: 18),
+                style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0), fontSize: 18),
               ),
             ),
             const SizedBox(height: 10),
@@ -40,7 +43,8 @@ class EventsRegistrationPage extends StatelessWidget {
 class EventRegistrationForm extends StatefulWidget {
   final String? eventId;
 
-  const EventRegistrationForm({Key? key, required this.eventId}) : super(key: key);
+  const EventRegistrationForm({Key? key, required this.eventId})
+      : super(key: key);
 
   @override
   _EventRegistrationFormState createState() => _EventRegistrationFormState();
@@ -53,33 +57,65 @@ class _EventRegistrationFormState extends State<EventRegistrationForm> {
   String? department;
 
   Future<void> createEvent() async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      final userSnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(currentUser!.uid)
+  try {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final userSnapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUser!.uid)
+        .get();
+    if (department != null) {
+      final eventRef = FirebaseFirestore.instance
+          .collection('Events')
+          .doc(widget.eventId.toString());
+
+      // Check if the user has already registered for this event
+      final existingRegistrationQuery = await eventRef
+          .collection('Registrations')
+          .where('userId', isEqualTo: currentUser.uid)
           .get();
-      if (department != null) {
-        final eventRef = FirebaseFirestore.instance.collection('Events').doc(widget.eventId.toString());
-        final registrationData = {
-          'name': userSnapshot['username'],
-          'email': userSnapshot['email'],
-          'department': department,
-          'userId': currentUser.uid,
-          'timestamp': FieldValue.serverTimestamp(), // Include a timestamp for sorting purposes
-        };
-        await eventRef.collection('Registrations').add(registrationData);
+      
+      if (existingRegistrationQuery.docs.isNotEmpty) {
+        // User has already registered for this event
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Registration successful ")),
+          const SnackBar(content: Text("You have already registered for this event")),
         );
-        // Don't need to navigate back here
-      } else {
-        print('Please fill all fields');
+        return; // Exit the method without proceeding further
       }
-    } catch (e) {
-      print('Error creating event: $e');
+
+      final registrationData = {
+        'name': userSnapshot['username'],
+        'email': userSnapshot['email'],
+        'department': department,
+        'userId': currentUser.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+      };
+      await eventRef.collection('Registrations').add(registrationData);
+      
+      // Send notification if registrations exceed 3
+      final registrationSnapshot =
+          await eventRef.collection('Registrations').get();
+      final numRegistrations = registrationSnapshot.docs.length;
+      if (numRegistrations > 3) {
+        await FirebaseFirestore.instance
+            .collection('Users')
+            .doc()
+            .collection('eNotifications')
+            .add({
+          'message': 'some users have joined your event',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Registration successful ")),
+      );
+    } else {
+      print('Please fill all fields');
     }
+  } catch (e) {
+    print('Error creating event: $e');
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +138,6 @@ class _EventRegistrationFormState extends State<EventRegistrationForm> {
               department = value;
             },
           ),
-
           const SizedBox(height: 20),
           ElevatedButton(
             style: ButtonStyle(
@@ -127,7 +162,8 @@ class _EventRegistrationFormState extends State<EventRegistrationForm> {
 class RegisteredUsersList extends StatelessWidget {
   final String? eventId;
 
-  const RegisteredUsersList({Key? key, required this.eventId}) : super(key: key);
+  const RegisteredUsersList({Key? key, required this.eventId})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -151,12 +187,28 @@ class RegisteredUsersList extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: snapshot.data!.docs.map((doc) {
-            var data = doc.data() as Map<String, dynamic>;
+            var data = doc.data()
+                as Map<String, dynamic>; // Declare and assign data here
             var userName = data['name'];
             var timestamp = data['timestamp']?.toDate();
-            return ListTile(
-              title: Text(userName),
-              subtitle: Text(timestamp.toString()),
+            
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatRoomPage(
+                      senderUserId: FirebaseAuth
+                          .instance.currentUser!.uid, // Current user ID
+                      receiverUserId: data['userId'], // Profile user ID
+                    ),
+                  ),
+                );
+              },
+              child: ListTile(
+                title: Text(userName),
+                subtitle: Text(timestamp.toString()),
+              ),
             );
           }).toList(),
         );
