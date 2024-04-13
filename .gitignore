@@ -47,3 +47,9 @@ app.*.map.json
 
 # Ignore Gradle build output directory
 build
+
+/lib/firestorestruct.txt
+/lib/rough.txt
+
+/lib/resources
+/lib/components/add_frnd_old_logic.txt
